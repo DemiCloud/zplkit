@@ -1,0 +1,41 @@
+# zplkit.toml.example
+#
+# Copy this file to zplkit.toml next to the binary (or wherever --config /
+# ZPLKIT_CONFIG points) and fill in your own values. zplkit.toml is
+# git-ignored; this example stays in the repo as its documented template.
+
+company_name = "Example Corp"
+asset_url    = "https://example.com/assets/"
+
+# Default printer settings. Precedence for each: its --flag > its ZPLKIT_*
+# environment variable > the value here > the built-in default.
+[printer]
+# "socket" dials endpoint ("host:port") directly with raw ZPL — the
+# traditional Zebra/CUPS-raw-queue wire format. "ipp" submits an IPP
+# Print-Job instead, e.g. to an LPrint instance fronting a printer that no
+# longer accepts raw sockets (CUPS is deprecating raw queues in favor of
+# IPP Everywhere / LPrint).
+backend = "socket"
+
+# socket: "host:port" of the printer itself.
+# ipp:    the printer resource's full http(s) URL, e.g.
+#         "http://lprint-host:8000/ipp/print/zebra1" — the exact path
+#         depends on your LPrint setup; check `lprint printers`.
+endpoint = "printer.example.net:9100"
+
+# ipp backend only: the IPP document-format attribute for the raw ZPL
+# document. application/octet-stream is a reasonable default (Zebra's own
+# IPP guide confirms it passes through to the ZPL parser unmodified); your
+# LPrint driver may expect something more specific.
+document_format = "application/octet-stream"
+
+# Resolve a short -t name to a path (without .zpl) under templates/.
+# A -t value containing "/" is always treated as an explicit path and
+# skips alias lookup entirely.
+[aliases]
+default        = "2x1/code128"
+default-border = "2x1/code128-border"
+field          = "2x1/contact-code128"
+field-border   = "2x1/contact-code128-border"
+qr             = "2.25x1.25/code128-qr"
+qr-border      = "2.25x1.25/code128-qr-border"
