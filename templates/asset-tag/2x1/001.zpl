@@ -5,18 +5,18 @@
 ^LL203
 
 ^FX --- Company name ---
-^FO30,15
+^FO34,22
 ^A0N,26,26
 ^FD{{.CompanyName}}^FS
 
 ^FX --- Code 128 asset tag ---
-^FO30,50
+^FO34,56
 ^BY2
 ^BCN,80,N,N,N,A
 ^FD{{.Tag}}^FS
 
 ^FX --- Human-readable asset tag ---
-^FO30,145
+^FO34,145
 ^A0N,40,40
 ^FD{{.Tag}}^FS
 
