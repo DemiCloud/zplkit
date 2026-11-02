@@ -12,7 +12,7 @@ asset_url    = "https://example.com/assets/"
 # enforced: templates/ is checked into the repo while this file is local
 # and gitignored, so a category that exists on disk but isn't listed here
 # yet (e.g. right after pulling an update) still works fine.
-categories = ["asset-tag"]
+categories = ["asset-tag", "mail-to", "mail-from", "name"]
 
 # Default printer settings. Precedence for each: its --flag > its ZPLKIT_*
 # environment variable > the value here > the built-in default.

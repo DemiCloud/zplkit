@@ -12,9 +12,9 @@ should raise concerns and advocate for the more appropriate approach.
 `zplkit` renders a ZPL label template and sends it to a network label printer (raw TCP
 or IPP — see `internal/printer`), and separately can send a raw `.zpl` file straight
 through for printer-side provisioning (`admin`). Templates aren't asset-tag-specific —
-`templates/<category>/<size>/<NNN>.zpl` groups them by what they're for (`asset-tag`
-today; a mail-from/mail-to return-address label or a generic box/jar label are other
-categories the same mechanism supports) and by physical label size within that.
+`templates/<category>/<size>/<NNN>.zpl` groups them by what they're for (`asset-tag`,
+`mail-to`, `mail-from`, `name` today; nothing stops adding more) and by physical label
+size within that.
 
 - Written in **Go 1.25**. Always **`CGO_ENABLED=0`**. Cross-platform (linux/darwin/
   windows) — this is a one-shot CLI, not a daemon, so there's no systemd/install story

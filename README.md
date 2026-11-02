@@ -112,10 +112,9 @@ directory by default — run it from the repo root, or point `--templates`/
 ## Templates
 
 Templates live under `templates/<category>/<size>/`: one top-level
-directory per *category* — what the label is for (`asset-tag` today;
-a mail-from/mail-to return-address label or a generic box/jar label are
-other categories this same mechanism supports, once someone adds
-templates for them) — and one subdirectory per physical label size within
+directory per *category* — what the label is for (`asset-tag`,
+`mail-to`, `mail-from`, `name` today; nothing stops adding more) — and
+one subdirectory per physical label size within
 it (e.g. `2x1`, `2.25x1.25`). Within a size, `.zpl` files are named by a
 plain sequential catalog number (`001`, `002`, ...), not a description of
 their contents — a label's feature set (which barcode symbologies, border
@@ -149,6 +148,43 @@ informational record of which category directories are in use, shown by
 Each border/no-border pair places its fields identically — the border
 variants only add the `^GB` border graphic, never move content — so
 switching between no-border/square/rounded doesn't reflow a label.
+
+### `mail-to`
+
+| Preview | Path | Fields |
+| --- | --- | --- |
+| ![mail-to/2.25x1.25/001](templates/mail-to/2.25x1.25/001.png) | `mail-to/2.25x1.25/001` | name, street address, city/state/ZIP |
+| ![mail-to/2.25x1.25/002](templates/mail-to/2.25x1.25/002.png) | `mail-to/2.25x1.25/002` | square border, name, street address, city/state/ZIP |
+| ![mail-to/2.25x1.25/003](templates/mail-to/2.25x1.25/003.png) | `mail-to/2.25x1.25/003` | rounded border, name, street address, city/state/ZIP |
+
+Fields: `Name`, `Address1`, `City`, `State`, `ZIP` (all via `-f`, none
+automatic — this is the recipient, not you).
+
+### `mail-from`
+
+| Preview | Path | Fields |
+| --- | --- | --- |
+| ![mail-from/2.25x1.25/001](templates/mail-from/2.25x1.25/001.png) | `mail-from/2.25x1.25/001` | company name, name, street address, city/state/ZIP |
+| ![mail-from/2.25x1.25/002](templates/mail-from/2.25x1.25/002.png) | `mail-from/2.25x1.25/002` | square border, company name, name, street address, city/state/ZIP |
+| ![mail-from/2.25x1.25/003](templates/mail-from/2.25x1.25/003.png) | `mail-from/2.25x1.25/003` | rounded border, company name, name, street address, city/state/ZIP |
+
+Same `Name`/`Address1`/`City`/`State`/`ZIP` fields as `mail-to`, plus
+the automatic `{{.CompanyName}}` from `zplkit.toml` — this is your own
+return address.
+
+### `name`
+
+| Preview | Path | Fields |
+| --- | --- | --- |
+| ![name/2x1/001](templates/name/2x1/001.png) | `name/2x1/001` | name, centered |
+| ![name/2x1/002](templates/name/2x1/002.png) | `name/2x1/002` | square border, name, centered |
+| ![name/2x1/003](templates/name/2x1/003.png) | `name/2x1/003` | rounded border, name, centered |
+
+A single centered `Name` field — a box or jar label, nothing else. Like
+every free-text field in this project, `Name` isn't length-validated:
+it auto-wraps up to 2 lines via `^FB`, but a value too long for that
+will overlap itself rather than erroring or shrinking to fit. Keep it
+short (a word or two).
 
 ### Template style
 
