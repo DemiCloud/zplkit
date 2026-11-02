@@ -21,7 +21,9 @@
 ^BCN,72,N,N,N,A
 ^FD{{.Tag}}^FS
 
-^FX --- QR direct asset URL ---
+^FX --- QR direct asset URL --- (^BY2,2,0 resets the barcode's height,
+^FX which ^BQ otherwise inherits as an unwanted Y-offset) ---
+^BY2,2,0
 ^FO306,76
 ^BQN,2,3
 ^FDQA,{{.AssetURL}}{{.Tag}}^FS
