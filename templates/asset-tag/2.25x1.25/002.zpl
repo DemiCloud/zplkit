@@ -26,8 +26,8 @@
 ^FD{{.Tag}}^FS
 
 ^FX --- QR direct asset URL ---
-^FO305,44
-^BQN,2,4
+^FO306,76
+^BQN,2,3
 ^FDQA,{{.AssetURL}}{{.Tag}}^FS
 
 ^XZ
