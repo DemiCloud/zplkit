@@ -5,28 +5,28 @@
 ^LL254
 ^LH0,0
 
-^FX --- Border ---
-^FO4,4
-^GB448,246,4^FS
+^FX --- Border with rounded corners ---
+^FO12,12
+^GB432,230,4,B,3^FS
 
 ^FX --- Branding ---
-^FO20,18
+^FO38,40
 ^A0N,30,30
 ^FD{{.CompanyName}} Asset^FS
 
 ^FX --- Human-readable asset tag ---
-^FO20,60
+^FO38,80
 ^A0N,45,38
 ^FD{{.Tag}}^FS
 
 ^FX --- Code 128 asset tag ---
-^FO20,125
+^FO38,141
 ^BY2,2,72
 ^BCN,72,N,N,N,A
 ^FD{{.Tag}}^FS
 
 ^FX --- QR direct asset URL ---
-^FO300,28
+^FO305,44
 ^BQN,2,4
 ^FDQA,{{.AssetURL}}{{.Tag}}^FS
 
