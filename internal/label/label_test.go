@@ -161,6 +161,54 @@ func TestRenderRejectsZPLBreakerCharacters(t *testing.T) {
 	}
 }
 
+func TestFitFont(t *testing.T) {
+	tests := []struct {
+		name             string
+		text             string
+		maxWidth         int
+		max, min         int
+		want             int
+		wantClampedToMax bool
+		wantClampedToMin bool
+	}{
+		{name: "empty text uses max", text: "", maxWidth: 390, max: 48, min: 20, want: 48},
+		{name: "short text uses max", text: "Jam", maxWidth: 390, max: 48, min: 20, wantClampedToMax: true},
+		{name: "long text shrinks below max", text: "Smoked Spanish Paprika", maxWidth: 390, max: 48, min: 20},
+		{name: "extreme text clamps to min", text: "Extremely Long Spice Jar Label Name Example", maxWidth: 390, max: 48, min: 20, wantClampedToMin: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := fitFont(tt.text, tt.maxWidth, tt.max, tt.min)
+			if got > tt.max || got < tt.min {
+				t.Fatalf("fitFont() = %d, want within [%d, %d]", got, tt.min, tt.max)
+			}
+			if tt.want != 0 && got != tt.want {
+				t.Errorf("fitFont() = %d, want %d", got, tt.want)
+			}
+			if tt.wantClampedToMax && got != tt.max {
+				t.Errorf("fitFont() = %d, want clamped to max %d", got, tt.max)
+			}
+			if tt.wantClampedToMin && got != tt.min {
+				t.Errorf("fitFont() = %d, want clamped to min %d", got, tt.min)
+			}
+		})
+	}
+}
+
+func TestRenderFitFontTemplateFunc(t *testing.T) {
+	dir := t.TempDir()
+	writeTemplate(t, dir, "fit", `{{$sz := fitfont .Name 390 48 20}}^A0N,{{$sz}},{{$sz}}^FD{{.Name}}^FS`)
+
+	got, err := Render(filepath.Join(dir, "fit.zpl"), Data{"Name": "Smoked Spanish Paprika"})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	want := "^A0N,32,32^FDSmoked Spanish Paprika^FS"
+	if got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
+	}
+}
+
 func TestListSortedRelativePaths(t *testing.T) {
 	dir := t.TempDir()
 	writeTemplate(t, dir, "2x1/001", "^XA^XZ")

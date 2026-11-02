@@ -180,11 +180,13 @@ return address.
 | ![name/2x1/002](templates/name/2x1/002.png) | `name/2x1/002` | square border, name, centered |
 | ![name/2x1/003](templates/name/2x1/003.png) | `name/2x1/003` | rounded border, name, centered |
 
-A single centered `Name` field — a box or jar label, nothing else. Like
-every free-text field in this project, `Name` isn't length-validated:
-it auto-wraps up to 2 lines via `^FB`, but a value too long for that
-will overlap itself rather than erroring or shrinking to fit. Keep it
-short (a word or two).
+A single centered `Name` field — a box or jar label, nothing else. Its
+font size isn't fixed: the template calls a `fitfont` function (a
+built-in template function, see [Placeholders](#placeholders) below)
+that shrinks it to keep `Name` on one line within the label, down to a
+20pt floor. A `Name` long enough to need smaller than that still
+renders at the floor size, on one line, running past the label's edge
+rather than wrapping into overlapping text.
 
 ### Template style
 
@@ -221,19 +223,28 @@ field name it needs — there's no fixed list — supplied from two sources:
 - `{{.CompanyName}}` / `{{.AssetURL}}` — always set, from `zplkit.toml`'s
   `company_name` / `asset_url`.
 - Anything else, via a repeatable `-f`/`--field KEY=VALUE` flag on
-  `print`. `{{.Tag}}` is the one in use today (set by `print`'s positional
-  `TAG` argument as shorthand for `-f Tag=...`, and additionally checked
-  against `^[A-Z]{2,4}-[0-9]{6}$`); a mail-to template might reference
-  `{{.Name}}`/`{{.Address1}}`/`{{.City}}`/`{{.State}}`/`{{.ZIP}}`, set via
-  `-f Name="Jane Doe" -f Address1="123 Main St" -f City=Springfield -f
-  State=IL -f ZIP=62701` (one `-f` per field — a field's value isn't
-  comma-split, so addresses containing commas are safe).
+  `print`. `{{.Tag}}` (checked against `^[A-Z]{2,4}-[0-9]{6}$`) is set
+  by `print`'s positional `TAG` argument as shorthand for `-f Tag=...`;
+  `mail-to`/`mail-from` use `{{.Name}}`/`{{.Address1}}`/`{{.City}}`/
+  `{{.State}}`/`{{.ZIP}}`, set via `-f Name="Jane Doe" -f Address1="123
+  Main St" -f City=Springfield -f State=IL -f ZIP=62701` (one `-f` per
+  field — a field's value isn't comma-split, so addresses containing
+  commas are safe).
 
 Referencing a field that doesn't exist (a typo, or one nobody supplied
 via `-f`) is a hard error at render time, not a silently blank or literal
 `{{...}}` in the output. Every field value is also rejected if it
 contains `^` or `~` (ZPL command prefixes), regardless of which field or
 where its value came from.
+
+Templates also have one built-in template function beyond Go's own
+(`len`, `printf`, etc.): `{{fitfont <text> <maxWidthDots> <maxFont>
+<minFont>}}` returns an `^A0` font size (dots) that keeps `<text>` on
+one line within `<maxWidthDots>`, shrinking from `<maxFont>` down to
+`<minFont>` as needed — text too long even at `<minFont>` still gets
+`<minFont>`, on one line, rather than wrapping. It's an estimate (`^A0`
+is proportionally spaced, not monospace) biased to avoid overflow
+rather than to be exact. See `templates/name/2x1/001.zpl`.
 
 ### Adding a template
 

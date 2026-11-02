@@ -4,10 +4,10 @@
 ^PW406
 ^LL203
 
-^FX --- Name ---
+^FX --- Name (fitfont shrinks it to stay on one line within 406 dots) ---
 ^FO0,70
-^A0N,48,48
-^FB406,2,0,C
+{{$sz := fitfont .Name 406 48 20}}^A0N,{{$sz}},{{$sz}}
+^FB406,1,0,C
 ^FD{{.Name}}^FS
 
 ^XZ

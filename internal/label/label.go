@@ -21,6 +21,34 @@ var nameRE = regexp.MustCompile(`^[A-Za-z0-9_./-]+$`)
 // a rendered label rather than just appearing as label text.
 const zplBreakers = "^~"
 
+// a0CharWidthRatio approximates ^A0 (Zebra's default scalable font)'s average
+// character width as a fraction of its height. ^A0 is proportionally spaced,
+// not monospace, so this isn't exact — it's calibrated against Labelary
+// renders of representative strings (short and long, narrow and wide
+// characters) and deliberately biased toward the high end of what was
+// measured (~0.45-0.54), so fitFont's width estimate errs high and its font
+// size errs small rather than risking overflow.
+const a0CharWidthRatio = 0.55
+
+// fitFont returns an ^A0 font size (equal width and height, in dots) that
+// keeps text on one line within maxWidth dots, shrinking from max down to
+// min as needed. If text wouldn't fit even at min, fitFont still returns
+// min — the caller renders a single line that overflows the available
+// width rather than wrapping (which would risk overlapping itself).
+func fitFont(text string, maxWidth, max, min int) int {
+	if text == "" {
+		return max
+	}
+	fit := int(float64(maxWidth) / (float64(len(text)) * a0CharWidthRatio))
+	if fit > max {
+		return max
+	}
+	if fit < min {
+		return min
+	}
+	return fit
+}
+
 // Data is the set of values a template can reference as {{.Key}}. It's
 // deliberately a map rather than a fixed struct: a template's field needs
 // vary by what it's labeling (an asset tag, a mail-from/to address, a
@@ -69,7 +97,10 @@ func Render(path string, data Data) (string, error) {
 		return "", fmt.Errorf("cannot read template: %w", err)
 	}
 
-	tmpl, err := template.New(filepath.Base(path)).Option("missingkey=error").Parse(string(b))
+	tmpl, err := template.New(filepath.Base(path)).
+		Option("missingkey=error").
+		Funcs(template.FuncMap{"fitfont": fitFont}).
+		Parse(string(b))
 	if err != nil {
 		return "", fmt.Errorf("parsing template %s: %w", path, err)
 	}

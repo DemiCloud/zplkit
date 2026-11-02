@@ -8,10 +8,10 @@
 ^FO8,8
 ^GB390,187,4,B,3^FS
 
-^FX --- Name ---
+^FX --- Name (fitfont shrinks it to stay on one line within 390 dots) ---
 ^FO8,70
-^A0N,48,48
-^FB390,2,0,C
+{{$sz := fitfont .Name 390 48 20}}^A0N,{{$sz}},{{$sz}}
+^FB390,1,0,C
 ^FD{{.Name}}^FS
 
 ^XZ
