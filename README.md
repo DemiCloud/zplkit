@@ -167,6 +167,15 @@ switching between no-border/square/rounded doesn't reflow a label.
 See `templates/asset-tag/2.25x1.25/001.zpl` for a template that follows
 this fully.
 
+**`^BY`'s height leaks into the next `^BQ`.** If a field block sets
+`^BY<w>,<r>,<h>` for a barcode (even though `^BC` takes its own
+explicit height), that `h` stays as printer state and gets added as a
+Y-offset to whatever `^BQ` (QR code) comes after it — confirmed on
+both Labelary and a real printer, so it's firmware behavior, not a
+preview artifact. If a QR field follows a barcode field anywhere in a
+template, reset it first: `^BY2,2,0` right before the QR's `^FO`/`^BQ`.
+See `templates/asset-tag/2.25x1.25/003.zpl`.
+
 ### Placeholders
 
 Templates are rendered with Go's [`text/template`](https://pkg.go.dev/text/template),
