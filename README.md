@@ -1,7 +1,7 @@
 # zplkit
 
-Render a ZPL label template for an asset tag and send it straight to a
-network label printer (raw TCP, port 9100 by default).
+Render a ZPL label template and send it straight to a network label
+printer (raw TCP, port 9100 by default).
 
 Contributing to this repo means adding or editing `.zpl` templates — no Go
 required. See [Adding a template](#adding-a-template).
@@ -30,32 +30,38 @@ $EDITOR zplkit.toml   # set company_name, asset_url, aliases
 ```
 
 `zplkit.toml` is git-ignored — it's where your real company name, asset
-URL, default printer backend/endpoint, and template aliases live.
-`zplkit.toml.example` stays in the repo as the documented template for it.
+URL, default printer backend/endpoint, template aliases, and declared
+template categories live. `zplkit.toml.example` stays in the repo as the
+documented template for it.
 
 ## Usage
 
 `zplkit` has four subcommands: `print`, `admin`, `version`, `help`.
 
 ```sh
-./zplkit print TAG                        # render the default template and print it
-./zplkit print -t qr TAG                   # render by alias
-./zplkit print -t 2x1/001 TAG              # render by explicit path
-./zplkit print -d TAG                      # dry run: write rendered ZPL to stdout
-./zplkit print -l                          # list templates and aliases
-./zplkit admin -d setup/set-clock.zpl      # dry run: write a raw ZPL file to stdout
-./zplkit admin setup/set-clock.zpl         # send a raw ZPL file straight to the printer
-./zplkit version                           # print the version (also --version, -V)
-./zplkit help [print|admin|version]        # usage (also --help, -h)
+./zplkit print TAG                           # render the default template and print it
+./zplkit print -t qr TAG                      # render by alias
+./zplkit print -t asset-tag/2x1/001 TAG       # render by explicit path
+./zplkit print -t asset-tag/2x1/001 -f Tag=TAG  # TAG via --field instead of positionally
+./zplkit print -d TAG                         # dry run: write rendered ZPL to stdout
+./zplkit print -l                             # list templates, categories, and aliases
+./zplkit admin -d setup/set-clock.zpl         # dry run: write a raw ZPL file to stdout
+./zplkit admin setup/set-clock.zpl            # send a raw ZPL file straight to the printer
+./zplkit version                              # print the version (also --version, -V)
+./zplkit help [print|admin|version]           # usage (also --help, -h)
 ```
 
-`TAG` must match `^[A-Z]{2,4}-[0-9]{6}$` (e.g. `ABC-000001`).
+`TAG` is optional on `print` — not every template needs one (see
+[Placeholders](#placeholders)) — but if given, either positionally or via
+`--field Tag=...`, it must match `^[A-Z]{2,4}-[0-9]{6}$` (e.g.
+`ABC-000001`).
 
 ### `print` flags
 
 | Flag | Env var | Config key | Default | Description |
 | --- | --- | --- | --- | --- |
 | `-t, --template` | — | — | `default` | Template name, alias, or path |
+| `-f, --field` | — | — | — | Set a template field as `KEY=VALUE` (repeatable) |
 | `-d, --dry-run` | — | — | off | Write rendered ZPL to stdout instead of printing |
 | `-l, --list` | — | — | off | List templates and aliases |
 | `--backend` | `ZPLKIT_BACKEND` | `printer.backend` | `socket` | Delivery backend: `socket` or `ipp` |
@@ -104,27 +110,37 @@ directory by default — run it from the repo root, or point `--templates`/
 
 ## Templates
 
-Templates live under `templates/<size>/`, one subdirectory per physical
-label size (e.g. `2x1`, `2.25x1.25`). Within a size, `.zpl` files are
-named by a plain sequential catalog number (`001`, `002`, ...), not a
-description of their contents — a label's feature set (which barcode
-symbologies, border or no border, text above/below the barcode, and so
-on) is combinatorial enough that trying to encode all of it into the
-filename stops being readable fast. What a template actually contains is
-documented in the table below (and in its own `^FX` summary comment,
-and its alias, if it has one) instead. Each `.zpl` file has a PNG preview
-of the same name, rendered via the
-[Labelary](http://labelary.com/viewer.html) API, so you can see what a
-template looks like without a printer.
+Templates live under `templates/<category>/<size>/`: one top-level
+directory per *category* — what the label is for (`asset-tag` today;
+a mail-from/mail-to return-address label or a generic box/jar label are
+other categories this same mechanism supports, once someone adds
+templates for them) — and one subdirectory per physical label size within
+it (e.g. `2x1`, `2.25x1.25`). Within a size, `.zpl` files are named by a
+plain sequential catalog number (`001`, `002`, ...), not a description of
+their contents — a label's feature set (which barcode symbologies, border
+or no border, text above/below the barcode, and so on) is combinatorial
+enough that trying to encode all of it into the filename stops being
+readable fast. What a template actually contains is documented in the
+table below (and in its own `^FX` summary comment, and its alias, if it
+has one) instead. Each `.zpl` file has a PNG preview of the same name,
+rendered via the [Labelary](http://labelary.com/viewer.html) API, so you
+can see what a template looks like without a printer.
+
+`zplkit.toml`'s `categories` list (see `zplkit.toml.example`) is a purely
+informational record of which category directories are in use, shown by
+`print -l` — it's never enforced, so a category that exists under
+`templates/` but isn't listed there yet still works.
+
+### `asset-tag`
 
 | Preview | Path | Fields | Default alias |
 | --- | --- | --- | --- |
-| ![2x1/001](templates/2x1/001.png) | `2x1/001` | company name, Code 128, human-readable tag | `default` |
-| ![2x1/002](templates/2x1/002.png) | `2x1/002` | border, company name, Code 128, human-readable tag | `default-border` |
-| ![2x1/003](templates/2x1/003.png) | `2x1/003` | company name, return contact, Code 128, tag | `field` |
-| ![2x1/004](templates/2x1/004.png) | `2x1/004` | border, company name, return contact, Code 128, tag | `field-border` |
-| ![2.25x1.25/001](templates/2.25x1.25/001.png) | `2.25x1.25/001` | company name, tag, Code 128, QR to asset URL | `qr` |
-| ![2.25x1.25/002](templates/2.25x1.25/002.png) | `2.25x1.25/002` | border, company name, tag, Code 128, QR to asset URL | `qr-border` |
+| ![asset-tag/2x1/001](templates/asset-tag/2x1/001.png) | `asset-tag/2x1/001` | company name, Code 128, human-readable tag | `default` |
+| ![asset-tag/2x1/002](templates/asset-tag/2x1/002.png) | `asset-tag/2x1/002` | border, company name, Code 128, human-readable tag | `default-border` |
+| ![asset-tag/2x1/003](templates/asset-tag/2x1/003.png) | `asset-tag/2x1/003` | company name, return contact, Code 128, tag | `field` |
+| ![asset-tag/2x1/004](templates/asset-tag/2x1/004.png) | `asset-tag/2x1/004` | border, company name, return contact, Code 128, tag | `field-border` |
+| ![asset-tag/2.25x1.25/001](templates/asset-tag/2.25x1.25/001.png) | `asset-tag/2.25x1.25/001` | company name, tag, Code 128, QR to asset URL | `qr` |
+| ![asset-tag/2.25x1.25/002](templates/asset-tag/2.25x1.25/002.png) | `asset-tag/2.25x1.25/002` | border, company name, tag, Code 128, QR to asset URL | `qr-border` |
 
 ### Template style
 
@@ -135,47 +151,70 @@ template looks like without a printer.
   (`^CI28`/`^PW`/`^LL`/`^LH`) and the first field.
 - Each ZPL command on its own line within a block (`^FO`, `^BY`, `^BC`,
   `^FD` each on their own line, rather than chained on one line).
-- A single `^FX` summary comment right after `^XA`: `<size>/<number> -
-  <size> @ 203 dpi: <comma-separated field list>`. The field list is the
-  one place (besides the table above) a template's contents need to be
-  spelled out — the filename itself stays just a number.
+- A single `^FX` summary comment right after `^XA`: `<category>/<size>/
+  <number> - <size> @ 203 dpi: <comma-separated field list>`. The field
+  list is the one place (besides the table above) a template's contents
+  need to be spelled out — the filename itself stays just a number.
 
-See `templates/2.25x1.25/001.zpl` for a template that follows this fully.
+See `templates/asset-tag/2.25x1.25/001.zpl` for a template that follows
+this fully.
 
 ### Placeholders
 
 Templates are rendered with Go's [`text/template`](https://pkg.go.dev/text/template),
-so placeholders use Go's `{{.Field}}` syntax:
+so placeholders use Go's `{{.Field}}` syntax. A template can reference any
+field name it needs — there's no fixed list — supplied from two sources:
 
-- `{{.Tag}}` — the asset tag passed on the command line.
-- `{{.CompanyName}}` — from `zplkit.toml`'s `company_name`.
-- `{{.AssetURL}}` — from `zplkit.toml`'s `asset_url`.
+- `{{.CompanyName}}` / `{{.AssetURL}}` — always set, from `zplkit.toml`'s
+  `company_name` / `asset_url`.
+- Anything else, via a repeatable `-f`/`--field KEY=VALUE` flag on
+  `print`. `{{.Tag}}` is the one in use today (set by `print`'s positional
+  `TAG` argument as shorthand for `-f Tag=...`, and additionally checked
+  against `^[A-Z]{2,4}-[0-9]{6}$`); a mail-to template might reference
+  `{{.Name}}`/`{{.Address1}}`/`{{.City}}`/`{{.State}}`/`{{.ZIP}}`, set via
+  `-f Name="Jane Doe" -f Address1="123 Main St" -f City=Springfield -f
+  State=IL -f ZIP=62701` (one `-f` per field — a field's value isn't
+  comma-split, so addresses containing commas are safe).
 
-Referencing a field that doesn't exist (a typo) is a hard error at render
-time, not a silently blank or literal `{{...}}` in the output.
+Referencing a field that doesn't exist (a typo, or one nobody supplied
+via `-f`) is a hard error at render time, not a silently blank or literal
+`{{...}}` in the output. Every field value is also rejected if it
+contains `^` or `~` (ZPL command prefixes), regardless of which field or
+where its value came from.
 
 ### Adding a template
 
-1. Drop a `.zpl` file under `templates/<size>/`, named with the next
-   unused catalog number in that directory (`001`, `002`, ...) — not a
-   description of its contents, see [Templates](#templates) above —
-   where `<size>` is the label's physical dimensions as `WIDTHxHEIGHT`
-   in inches. Follow the style above.
-2. Use the placeholders above as needed.
+1. Drop a `.zpl` file under `templates/<category>/<size>/`, named with
+   the next unused catalog number in that directory (`001`, `002`, ...)
+   — not a description of its contents, see [Templates](#templates)
+   above — where `<category>` is what the label is for (reuse an
+   existing one, e.g. `asset-tag`, or introduce a new one) and `<size>`
+   is the label's physical dimensions as `WIDTHxHEIGHT` in inches. Follow
+   the style above.
+2. Use the placeholders above as needed — any field your template
+   references via `{{.Field}}` must be supplied at print time via
+   `-f Field=value` (or be `CompanyName`/`AssetURL`, which are automatic).
 3. Generate a preview of the same number so it shows up here and in `-l`:
 
    ```sh
    cp zplkit.toml.example zplkit.toml   # if you don't already have one
-   ./zplkit print -d -t <size>/<number> ABC-000001 \
+   ./zplkit print -d -t <category>/<size>/<number> -f Tag=ABC-000001 \
      | curl -s -X POST --data-binary @- \
        "http://api.labelary.com/v1/printers/8dpmm/labels/<size>/0/" \
-       -o templates/<size>/<number>.png
+       -o templates/<category>/<size>/<number>.png
    ```
 
-4. Add a row to the table above describing what it contains — this is the
-   template's real documentation, since the filename itself won't say.
-5. Optionally add an `<alias> = "<size>/<number>"` line under `[aliases]`
-   in `zplkit.toml.example` so others get a short name for it too.
+   (swap `-f Tag=ABC-000001` for whatever `-f`/positional values your
+   template actually needs)
+
+4. Add a row to the relevant category's table above describing what it
+   contains — this is the template's real documentation, since the
+   filename itself won't say. Introducing a brand-new category also means
+   adding its own `###` subsection and table (see `### asset-tag` above),
+   and adding its name to `categories` in `zplkit.toml.example`.
+5. Optionally add an `<alias> = "<category>/<size>/<number>"` line under
+   `[aliases]` in `zplkit.toml.example` so others get a short name for it
+   too.
 
 ## Printer provisioning (`admin`)
 

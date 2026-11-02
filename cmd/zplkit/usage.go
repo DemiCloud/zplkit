@@ -6,13 +6,13 @@ import (
 )
 
 func usage() {
-	fmt.Print(`zplkit — render a ZPL label template for an asset tag and send it to a network label printer
+	fmt.Print(`zplkit — render a ZPL label template and send it to a network label printer
 
 Usage:
   zplkit <subcommand> [flags]
 
 Subcommands:
-  print    Render a template for a tag and send it to the printer
+  print    Render a template and send it to the printer
   admin    Send a raw ZPL file to the printer (provisioning/configuration)
   version  Show version information
   help     Show help for a subcommand
@@ -22,16 +22,15 @@ Subcommands:
 func usageFor(sub string) {
 	switch sub {
 	case "print":
-		fmt.Print(`zplkit print — render a ZPL label template for TAG and send it to the printer
+		fmt.Print(`zplkit print — render a ZPL label template and send it to the printer
 
 Usage:
-  zplkit print [flags] TAG
+  zplkit print [flags] [TAG]
   zplkit print -l
-
-TAG must match ^[A-Z]{2,4}-[0-9]{6}$ (e.g. ABC-000001).
 
 Flags:
   -t, --template string         Template name, alias, or path (default "default")
+  -f, --field KEY=VALUE         Set a template field (repeatable)
   -d, --dry-run                 Write rendered ZPL to stdout instead of printing
   -l, --list                    List available templates and aliases
       --backend string          Delivery backend: "socket" or "ipp" (env ZPLKIT_BACKEND; config: printer.backend; default "socket")
@@ -43,11 +42,7 @@ Flags:
   -h, --help                    Show this help
 `)
 	case "admin":
-		fmt.Print(`zplkit admin — send a raw ZPL file straight to the printer (no template rendering)
-
-Use this for printer-side provisioning/configuration: storing a logo
-(~DG), setting the real-time clock (^SC), calibration, and similar
-one-off setup that isn't tied to a specific asset tag.
+		fmt.Print(`zplkit admin — send a raw ZPL file to the printer, no template rendering
 
 Usage:
   zplkit admin [flags] FILE

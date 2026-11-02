@@ -1,5 +1,5 @@
 ^XA
-^FX 2x1/002 - 2 x 1 in @ 203 dpi: border, company name, Code 128, human-readable tag
+^FX asset-tag/2x1/002 - 2 x 1 in @ 203 dpi: border, company name, Code 128, human-readable tag
 ^CI28
 ^PW406
 ^LL203

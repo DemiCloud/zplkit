@@ -9,17 +9,23 @@ should raise concerns and advocate for the more appropriate approach.
 
 ## Project Overview
 
-`zplkit` renders a ZPL label template for an asset tag and sends it to a network label
-printer (raw TCP or IPP — see `internal/printer`), and separately can send a raw `.zpl`
-file straight through for printer-side provisioning (`admin`).
+`zplkit` renders a ZPL label template and sends it to a network label printer (raw TCP
+or IPP — see `internal/printer`), and separately can send a raw `.zpl` file straight
+through for printer-side provisioning (`admin`). Templates aren't asset-tag-specific —
+`templates/<category>/<size>/<NNN>.zpl` groups them by what they're for (`asset-tag`
+today; a mail-from/mail-to return-address label or a generic box/jar label are other
+categories the same mechanism supports) and by physical label size within that.
 
 - Written in **Go 1.25**. Always **`CGO_ENABLED=0`**. Cross-platform (linux/darwin/
   windows) — this is a one-shot CLI, not a daemon, so there's no systemd/install story
   like `config-watch`/`anycast-sentinel` have.
 - Produces a **single static binary** from `cmd/zplkit/`.
 - **The repo's real contribution surface is `templates/`, not Go code.** Adding a label
-  layout is "drop a `.zpl` file + a preview PNG, maybe add a TOML alias" — see the
-  README's "Adding a template" section. Don't make template changes require touching Go.
+  layout — even for a brand-new category — is "drop a `.zpl` file + a preview PNG,
+  maybe add a TOML alias" — see the README's "Adding a template" section. Don't make
+  template changes require touching Go; this is also why `label.Data` is a generic
+  `map[string]string` rather than a fixed struct (see Key Conventions below) — a
+  per-category struct would mean a Go change every time a template needed a new field.
 - CLI is subcommand-based (`print`/`admin`/`version`/`help`), following the same
   per-subcommand-`FlagSet` + `usage()`/`usageFor(sub)` pattern as `config-watch` — see
   that project's `cmd/config-watch/main.go` if extending this further. Unlike
@@ -33,7 +39,7 @@ file straight through for printer-side provisioning (`admin`).
 cmd/
   zplkit/
     main.go            ← dispatch on os.Args[1] only; var version; tagRE
-    print.go            ← printCmd: render a template for TAG and send/dry-run/list it
+    print.go            ← printCmd: render a template and send/dry-run/list it
     admin.go             ← adminCmd: read a raw .zpl file and send/dry-run it, no rendering
     resolve.go            ← envOr/envOrInt + resolveBackend/resolveEndpoint/resolveDocumentFormat,
                              shared by printCmd and adminCmd
@@ -41,11 +47,11 @@ cmd/
     main_test.go             ← tests for the resolve* precedence functions
 internal/
   config/
-    config.go          ← Config struct (company_name/asset_url/printer/aliases), toml tags
+    config.go          ← Config struct (company_name/asset_url/printer/aliases/categories), toml tags
     load.go             ← Load(path): decode + DisallowUnknownFields + ZPL-injection check
     load_test.go
   label/
-    label.go            ← Resolve (alias/path lookup), Render (text/template), List
+    label.go            ← Resolve (alias/path lookup), Render (text/template + field validation), List
     label_test.go
   printer/
     send.go              ← Backend type + Send(backend, endpoint, documentFormat, zpl, timeout) dispatcher
@@ -54,9 +60,10 @@ internal/
     ipp.go                 ← sendIPP: IPP Print-Job via github.com/phin1x/go-ipp's low-level API
     ipp_test.go
 templates/
-  <size>/                ← one directory per physical label size, e.g. "2x1", "2.25x1.25"
-    <name>.zpl            ← see README's "Template style" for the comment/formatting convention
-    <name>.png             ← Labelary-rendered preview, same name as the .zpl file
+  <category>/            ← one directory per label category, e.g. "asset-tag" — what the label is for
+    <size>/                ← one directory per physical label size, e.g. "2x1", "2.25x1.25"
+      <NNN>.zpl              ← catalog number, not a descriptive name — see README's "Templates" section
+      <NNN>.png               ← Labelary-rendered preview, same name as the .zpl file
 ```
 
 `internal/config`, `internal/label`, and `internal/printer` do not import each other.
@@ -168,15 +175,23 @@ Use conventional-commits style:
 - Config is TOML via `github.com/pelletier/go-toml/v2`, decoded with
   `DisallowUnknownFields()` — a typo'd key in `zplkit.toml` is a load error, not a
   silently-ignored field.
-- `config.Load` rejects `^`/`~` in `company_name`/`asset_url` — those are ZPL command
-  prefixes, and these values get substituted into ZPL the same way an operator-supplied
-  template field does. `label.Resolve` separately validates the `-t` name/alias itself
-  (character allowlist, no `..`) so a crafted `-t` can't escape `TEMPLATE_DIR`. If you
-  add a new config field that ends up inside rendered ZPL, give it the same check.
-- Template rendering uses `text/template` against a `label.Data{Tag, CompanyName,
-  AssetURL}` struct, not manual string replacement — an unknown field reference
-  (typo'd placeholder) is then a hard template-execution error for free, rather than
-  something `label.Render` has to detect itself.
+- `config.Load` rejects `^`/`~` in `company_name`/`asset_url` at load time, for an early,
+  specific error pointing at `zplkit.toml` — those are ZPL command prefixes. This is
+  belt-and-suspenders with `label.Render`'s own check (see below), which is what's
+  actually relied on now that field values can also come from `print -f`.
+  `label.Resolve` separately validates the `-t` name/alias itself (character allowlist,
+  no `..`) so a crafted `-t` can't escape `TEMPLATE_DIR`.
+- `label.Data` is `map[string]string`, not a fixed struct — see Project Overview above
+  for why. `label.Render` parses templates with `.Option("missingkey=error")`, so a
+  placeholder that doesn't resolve to a key in `Data` (typo'd, or simply a field nobody
+  supplied via `-f`) is still a hard template-execution error, the same guarantee the
+  old struct gave for free. Don't drop that `Option` call when touching `Render`.
+- `label.Render` also runs every `Data` value through `validateFieldValues` (same
+  `^`/`~` ZPL-breaker check as `config.Load`'s, kept as a separate copy rather than a
+  shared helper — see the "do not import each other" note above) before executing the
+  template. This is now the one enforced choke point for "does this value end up
+  verbatim in ZPL," regardless of whether it came from config or a CLI `-f` flag — see
+  Security below.
 
 ### Testing
 
@@ -185,7 +200,9 @@ Use conventional-commits style:
   each ZPL-breaker-character case.
 - `internal/label`'s tests exercise `Resolve`/`Render`/`List` against real temp-dir
   template files, not mocks — covers alias lookup, explicit-path lookup, flat-name
-  fallback, path-traversal rejection, and a missing-placeholder render failure.
+  fallback, path-traversal rejection, an unknown-placeholder render failure, a field
+  nobody supplied (`missingkey=error`), and each ZPL-breaker-character case in a
+  field value.
 - `internal/printer`'s socket tests (`socket_test.go`) run a real `net.Listen`
   loopback listener and assert on the bytes it received, plus a connection-refused
   case. Its IPP tests (`ipp_test.go`) run a real `httptest.Server` that decodes the
@@ -197,19 +214,27 @@ Use conventional-commits style:
 
 ### Security
 
-`company_name`/`asset_url` (from `zplkit.toml`) and the rendered `{{.Tag}}` all end up
-verbatim inside ZPL sent to a printer, where `^`/`~` start new commands. `TAG` is
-constrained by `tagRE` in `print.go` before it ever reaches `label.Render`; config values
-are constrained by `config.Load`'s validation. Apply extra scrutiny to any change that:
+Every value in a `label.Data` ends up verbatim inside ZPL sent to a printer, where
+`^`/`~` start new commands — `CompanyName`/`AssetURL` (from `zplkit.toml`), `Tag` (from
+`print`'s positional `TAG` argument or `-f Tag=...`), and any other field a template
+references, set via `print -f Field=value`. `label.Render`'s `validateFieldValues`
+enforces the `^`/`~` rejection on every key in `Data` in one place, so this is now
+structural rather than something each value's source needs to remember — see Key
+Conventions above. `Tag` specifically also gets the stronger `tagRE` shape check
+(`^[A-Z]{2,4}-[0-9]{6}$`) in `print.go`, applied whenever `Data["Tag"]` is set, from
+either source. Apply extra scrutiny to any change that:
 
-- Adds a new value that gets substituted into a template (a new `label.Data` field,
-  a new config field) without threading it through an equivalent character check.
+- Adds a path where a value reaches `label.Render` without going through `Data` (and
+  therefore without going through `validateFieldValues`) — e.g. any future templating
+  that doesn't route through `label.Data`.
+- Loosens or removes `label.Render`'s `.Option("missingkey=error")` or
+  `validateFieldValues` call.
 - `admin.go` is the one deliberate exception to all of this: it reads an arbitrary local
   file and sends its bytes to the printer completely unvalidated — no `tagRE`, no
-  `label.Resolve`'s path-traversal check, no `config.Load`'s `^`/`~` rejection. That's
-  intentional (it's an explicit operator action on a file they chose, not something
-  driven by a scanned tag or other external input), not an oversight — don't add
-  `print`-style validation to it, and don't let `print.go` grow an "send raw file" mode
-  that skips validation the way `admin.go` does.
+  `label.Resolve`'s path-traversal check, no field validation. That's intentional (it's
+  an explicit operator action on a file they chose, not something driven by a scanned
+  tag or other external input), not an oversight — don't add `print`-style validation
+  to it, and don't let `print.go` grow an "send raw file" mode that skips validation the
+  way `admin.go` does.
 - Changes `label.Resolve`'s name/path validation — this is what stands between a
   `-t` argument and reading an arbitrary file via `TEMPLATE_DIR/../../...`.

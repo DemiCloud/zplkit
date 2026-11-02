@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -19,6 +20,7 @@ func printCmd(args []string) {
 
 	var (
 		template           string
+		fieldFlags         []string
 		dryRun             bool
 		list               bool
 		backendFlag        string
@@ -29,6 +31,7 @@ func printCmd(args []string) {
 		timeoutSec         int
 	)
 	fs.StringVarP(&template, "template", "t", "default", "template name, alias, or path")
+	fs.StringArrayVarP(&fieldFlags, "field", "f", nil, "set a template field as KEY=VALUE (repeatable)")
 	fs.BoolVarP(&dryRun, "dry-run", "d", false, "write rendered ZPL to stdout instead of printing")
 	fs.BoolVarP(&list, "list", "l", false, "list available templates and aliases")
 	fs.StringVar(&backendFlag, "backend", "", `delivery backend: "socket" or "ipp" (env ZPLKIT_BACKEND; config: printer.backend; default "socket")`)
@@ -58,14 +61,33 @@ func printCmd(args []string) {
 		return
 	}
 
-	if fs.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "print: a TAG argument is required\n\n")
+	if fs.NArg() > 1 {
+		fmt.Fprintf(os.Stderr, "print: at most one positional TAG argument is allowed\n\n")
 		usageFor("print")
 		os.Exit(1)
 	}
-	tag := fs.Arg(0)
-	if !tagRE.MatchString(tag) {
-		fmt.Fprintln(os.Stderr, "zplkit: invalid tag:", tag)
+
+	data := label.Data{
+		"CompanyName": cfg.CompanyName,
+		"AssetURL":    cfg.AssetURL,
+	}
+	for _, kv := range fieldFlags {
+		k, v, ok := strings.Cut(kv, "=")
+		if !ok {
+			fmt.Fprintf(os.Stderr, "zplkit: invalid --field value %q, want KEY=VALUE\n", kv)
+			os.Exit(1)
+		}
+		data[k] = v
+	}
+	if fs.NArg() == 1 {
+		if _, exists := data["Tag"]; exists {
+			fmt.Fprintln(os.Stderr, "zplkit: Tag given both positionally and via --field; use only one")
+			os.Exit(1)
+		}
+		data["Tag"] = fs.Arg(0)
+	}
+	if tag, ok := data["Tag"]; ok && !tagRE.MatchString(tag) {
+		fmt.Fprintf(os.Stderr, "zplkit: invalid tag %q, must match %s\n", tag, tagRE.String())
 		os.Exit(1)
 	}
 
@@ -75,11 +97,7 @@ func printCmd(args []string) {
 		os.Exit(1)
 	}
 
-	zpl, err := label.Render(path, label.Data{
-		Tag:         tag,
-		CompanyName: cfg.CompanyName,
-		AssetURL:    cfg.AssetURL,
-	})
+	zpl, err := label.Render(path, data)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "zplkit:", err)
 		os.Exit(1)
@@ -106,6 +124,12 @@ func listTemplates(templateDir string, cfg *config.Config) error {
 	}
 	for _, name := range names {
 		fmt.Println(name)
+	}
+
+	if len(cfg.Categories) > 0 {
+		categories := append([]string(nil), cfg.Categories...)
+		sort.Strings(categories)
+		fmt.Println("\nCategories:", strings.Join(categories, ", "))
 	}
 
 	if len(cfg.Aliases) == 0 {

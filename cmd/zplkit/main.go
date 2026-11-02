@@ -1,6 +1,6 @@
-// Command zplkit renders a ZPL label template for an asset tag and sends
-// it to a network label printer, or sends a raw ZPL file straight through
-// for printer-side provisioning (see "zplkit help admin").
+// Command zplkit renders a ZPL label template and sends it to a network
+// label printer, or sends a raw ZPL file straight through for
+// printer-side provisioning (see "zplkit help admin").
 package main
 
 import (

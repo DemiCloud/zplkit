@@ -99,7 +99,7 @@ func TestRenderSubstitutesFields(t *testing.T) {
 	dir := t.TempDir()
 	writeTemplate(t, dir, "basic", "^FD{{.CompanyName}}^FS^FD{{.Tag}}^FS")
 
-	got, err := Render(filepath.Join(dir, "basic.zpl"), Data{Tag: "ABC-000001", CompanyName: "Example Corp"})
+	got, err := Render(filepath.Join(dir, "basic.zpl"), Data{"Tag": "ABC-000001", "CompanyName": "Example Corp"})
 	if err != nil {
 		t.Fatalf("Render: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestRenderConcatenatesAssetURLAndTag(t *testing.T) {
 	dir := t.TempDir()
 	writeTemplate(t, dir, "qr", "^FDQA,{{.AssetURL}}{{.Tag}}^FS")
 
-	got, err := Render(filepath.Join(dir, "qr.zpl"), Data{Tag: "ABC-000001", AssetURL: "https://example.com/assets/"})
+	got, err := Render(filepath.Join(dir, "qr.zpl"), Data{"Tag": "ABC-000001", "AssetURL": "https://example.com/assets/"})
 	if err != nil {
 		t.Fatalf("Render: %v", err)
 	}
@@ -127,8 +127,37 @@ func TestRenderUnknownPlaceholderFails(t *testing.T) {
 	dir := t.TempDir()
 	writeTemplate(t, dir, "typo", "^FD{{.CompnayName}}^FS")
 
-	if _, err := Render(filepath.Join(dir, "typo.zpl"), Data{CompanyName: "Example Corp"}); err == nil {
+	if _, err := Render(filepath.Join(dir, "typo.zpl"), Data{"CompanyName": "Example Corp"}); err == nil {
 		t.Fatal("expected error for unknown placeholder, got nil")
+	}
+}
+
+func TestRenderMissingFieldFails(t *testing.T) {
+	dir := t.TempDir()
+	writeTemplate(t, dir, "needs-zip", "^FD{{.ZIP}}^FS")
+
+	if _, err := Render(filepath.Join(dir, "needs-zip.zpl"), Data{"Name": "Jane Doe"}); err == nil {
+		t.Fatal("expected error for a field nobody supplied, got nil")
+	}
+}
+
+func TestRenderRejectsZPLBreakerCharacters(t *testing.T) {
+	tests := []struct {
+		name string
+		data Data
+	}{
+		{"caret", Data{"Name": "Evil^XA^FO0,0^XZ"}},
+		{"tilde", Data{"Name": "Evil~SD"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			writeTemplate(t, dir, "basic", "^FD{{.Name}}^FS")
+
+			if _, err := Render(filepath.Join(dir, "basic.zpl"), tt.data); err == nil {
+				t.Fatal("expected error for ZPL breaker character, got nil")
+			}
+		})
 	}
 }
 

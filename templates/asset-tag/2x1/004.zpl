@@ -1,8 +1,12 @@
 ^XA
-^FX 2x1/003 - 2 x 1 in @ 203 dpi: company name, return contact, Code 128, tag
+^FX asset-tag/2x1/004 - 2 x 1 in @ 203 dpi: border, company name, return contact, Code 128, tag
 ^CI28
 ^PW406
 ^LL203
+
+^FX --- Border ---
+^FO4,4
+^GB398,195,4^FS
 
 ^FX --- Company name ---
 ^FO30,10

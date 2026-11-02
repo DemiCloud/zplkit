@@ -5,13 +5,20 @@
 package config
 
 // Config holds the values templates can reference as {{.CompanyName}} and
-// {{.AssetURL}}, the default printer settings, and the alias -> template
-// path table.
+// {{.AssetURL}}, the default printer settings, the alias -> template path
+// table, and the declared template categories.
 type Config struct {
 	CompanyName string            `toml:"company_name"`
 	AssetURL    string            `toml:"asset_url"`
 	Printer     PrinterConfig     `toml:"printer"`
 	Aliases     map[string]string `toml:"aliases"`
+	// Categories is a purely informational list of the template category
+	// directories in use (the first path segment under templates/, e.g.
+	// "asset-tag"), shown by `print -l` for discoverability. It is never
+	// enforced — templates/ is checked into the repo while zplkit.toml is
+	// local and gitignored, so a category existing on disk without being
+	// listed here (e.g. right after pulling an update) must still work.
+	Categories []string `toml:"categories"`
 }
 
 // PrinterConfig is the lowest-priority source for how zpl gets delivered —
