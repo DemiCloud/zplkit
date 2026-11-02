@@ -1,5 +1,5 @@
 ^XA
-^FX contact-code128 - 2 x 1 in @ 203 dpi: company name, return contact, Code 128, tag
+^FX 2x1/003 - 2 x 1 in @ 203 dpi: company name, return contact, Code 128, tag
 ^CI28
 ^PW406
 ^LL203

@@ -1,5 +1,5 @@
 ^XA
-^FX code128-qr - 2.25 x 1.25 in @ 203 dpi: company name, human-readable tag, Code 128, QR to asset URL
+^FX 2.25x1.25/001 - 2.25 x 1.25 in @ 203 dpi: company name, human-readable tag, Code 128, QR to asset URL
 ^CI28
 ^PW456
 ^LL254

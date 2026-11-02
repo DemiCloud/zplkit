@@ -1,5 +1,5 @@
 ^XA
-^FX code128 - 2 x 1 in @ 203 dpi: company name, Code 128, human-readable tag
+^FX 2x1/001 - 2 x 1 in @ 203 dpi: company name, Code 128, human-readable tag
 ^CI28
 ^PW406
 ^LL203

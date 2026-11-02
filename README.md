@@ -40,7 +40,7 @@ URL, default printer backend/endpoint, and template aliases live.
 ```sh
 ./zplkit print TAG                        # render the default template and print it
 ./zplkit print -t qr TAG                   # render by alias
-./zplkit print -t 2x1/code128 TAG          # render by explicit path
+./zplkit print -t 2x1/001 TAG              # render by explicit path
 ./zplkit print -d TAG                      # dry run: write rendered ZPL to stdout
 ./zplkit print -l                          # list templates and aliases
 ./zplkit admin -d setup/set-clock.zpl      # dry run: write a raw ZPL file to stdout
@@ -105,18 +105,26 @@ directory by default — run it from the repo root, or point `--templates`/
 ## Templates
 
 Templates live under `templates/<size>/`, one subdirectory per physical
-label size (e.g. `2x1`, `2.25x1.25`). Each `.zpl` file has a PNG preview of
-the same name, rendered via the [Labelary](http://labelary.com/viewer.html)
-API, so you can see what a template looks like without a printer.
+label size (e.g. `2x1`, `2.25x1.25`). Within a size, `.zpl` files are
+named by a plain sequential catalog number (`001`, `002`, ...), not a
+description of their contents — a label's feature set (which barcode
+symbologies, border or no border, text above/below the barcode, and so
+on) is combinatorial enough that trying to encode all of it into the
+filename stops being readable fast. What a template actually contains is
+documented in the table below (and in its own `^FX` summary comment,
+and its alias, if it has one) instead. Each `.zpl` file has a PNG preview
+of the same name, rendered via the
+[Labelary](http://labelary.com/viewer.html) API, so you can see what a
+template looks like without a printer.
 
 | Preview | Path | Fields | Default alias |
 | --- | --- | --- | --- |
-| ![code128](templates/2x1/code128.png) | `2x1/code128` | company name, Code 128, human-readable tag | `default` |
-| ![code128-border](templates/2x1/code128-border.png) | `2x1/code128-border` | border, company name, Code 128, human-readable tag | `default-border` |
-| ![contact-code128](templates/2x1/contact-code128.png) | `2x1/contact-code128` | company name, return contact, Code 128, tag | `field` |
-| ![contact-code128-border](templates/2x1/contact-code128-border.png) | `2x1/contact-code128-border` | border, company name, return contact, Code 128, tag | `field-border` |
-| ![code128-qr](templates/2.25x1.25/code128-qr.png) | `2.25x1.25/code128-qr` | company name, tag, Code 128, QR to asset URL | `qr` |
-| ![code128-qr-border](templates/2.25x1.25/code128-qr-border.png) | `2.25x1.25/code128-qr-border` | border, company name, tag, Code 128, QR to asset URL | `qr-border` |
+| ![2x1/001](templates/2x1/001.png) | `2x1/001` | company name, Code 128, human-readable tag | `default` |
+| ![2x1/002](templates/2x1/002.png) | `2x1/002` | border, company name, Code 128, human-readable tag | `default-border` |
+| ![2x1/003](templates/2x1/003.png) | `2x1/003` | company name, return contact, Code 128, tag | `field` |
+| ![2x1/004](templates/2x1/004.png) | `2x1/004` | border, company name, return contact, Code 128, tag | `field-border` |
+| ![2.25x1.25/001](templates/2.25x1.25/001.png) | `2.25x1.25/001` | company name, tag, Code 128, QR to asset URL | `qr` |
+| ![2.25x1.25/002](templates/2.25x1.25/002.png) | `2.25x1.25/002` | border, company name, tag, Code 128, QR to asset URL | `qr-border` |
 
 ### Template style
 
@@ -127,11 +135,12 @@ API, so you can see what a template looks like without a printer.
   (`^CI28`/`^PW`/`^LL`/`^LH`) and the first field.
 - Each ZPL command on its own line within a block (`^FO`, `^BY`, `^BC`,
   `^FD` each on their own line, rather than chained on one line).
-- A single `^FX` summary comment right after `^XA`: `<name> - <size> @
-  203 dpi: <comma-separated field list>`.
+- A single `^FX` summary comment right after `^XA`: `<size>/<number> -
+  <size> @ 203 dpi: <comma-separated field list>`. The field list is the
+  one place (besides the table above) a template's contents need to be
+  spelled out — the filename itself stays just a number.
 
-See `templates/2.25x1.25/code128-qr.zpl` for a template that follows
-this fully.
+See `templates/2.25x1.25/001.zpl` for a template that follows this fully.
 
 ### Placeholders
 
@@ -147,23 +156,26 @@ time, not a silently blank or literal `{{...}}` in the output.
 
 ### Adding a template
 
-1. Drop a `.zpl` file under `templates/<size>/`, named for what it
-   contains (e.g. `code128-qr`, or `code128-qr-border` for a bordered
-   variant), where `<size>` is the label's physical dimensions as
-   `WIDTHxHEIGHT` in inches. Follow the style above.
+1. Drop a `.zpl` file under `templates/<size>/`, named with the next
+   unused catalog number in that directory (`001`, `002`, ...) — not a
+   description of its contents, see [Templates](#templates) above —
+   where `<size>` is the label's physical dimensions as `WIDTHxHEIGHT`
+   in inches. Follow the style above.
 2. Use the placeholders above as needed.
-3. Generate a preview of the same name so it shows up here and in `-l`:
+3. Generate a preview of the same number so it shows up here and in `-l`:
 
    ```sh
    cp zplkit.toml.example zplkit.toml   # if you don't already have one
-   ./zplkit print -d -t <size>/<name> ABC-000001 \
+   ./zplkit print -d -t <size>/<number> ABC-000001 \
      | curl -s -X POST --data-binary @- \
        "http://api.labelary.com/v1/printers/8dpmm/labels/<size>/0/" \
-       -o templates/<size>/<name>.png
+       -o templates/<size>/<number>.png
    ```
 
-4. Optionally add an `<alias> = "<size>/<name>"` line under `[aliases]` in
-   `zplkit.toml.example` so others get a short name for it too.
+4. Add a row to the table above describing what it contains — this is the
+   template's real documentation, since the filename itself won't say.
+5. Optionally add an `<alias> = "<size>/<number>"` line under `[aliases]`
+   in `zplkit.toml.example` so others get a short name for it too.
 
 ## Printer provisioning (`admin`)
 

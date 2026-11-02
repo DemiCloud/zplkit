@@ -33,9 +33,9 @@ document_format = "application/octet-stream"
 # A -t value containing "/" is always treated as an explicit path and
 # skips alias lookup entirely.
 [aliases]
-default        = "2x1/code128"
-default-border = "2x1/code128-border"
-field          = "2x1/contact-code128"
-field-border   = "2x1/contact-code128-border"
-qr             = "2.25x1.25/code128-qr"
-qr-border      = "2.25x1.25/code128-qr-border"
+default        = "2x1/001"
+default-border = "2x1/002"
+field          = "2x1/003"
+field-border   = "2x1/004"
+qr             = "2.25x1.25/001"
+qr-border      = "2.25x1.25/002"

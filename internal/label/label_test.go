@@ -19,14 +19,14 @@ func writeTemplate(t *testing.T, dir, rel, contents string) {
 
 func TestResolveByAlias(t *testing.T) {
 	dir := t.TempDir()
-	writeTemplate(t, dir, "2x1/code128", "^XA^XZ")
-	aliases := map[string]string{"default": "2x1/code128"}
+	writeTemplate(t, dir, "2x1/001", "^XA^XZ")
+	aliases := map[string]string{"default": "2x1/001"}
 
 	path, err := Resolve(dir, "default", aliases)
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
-	want := filepath.Join(dir, "2x1/code128.zpl")
+	want := filepath.Join(dir, "2x1/001.zpl")
 	if path != want {
 		t.Errorf("Resolve() = %q, want %q", path, want)
 	}
@@ -34,13 +34,13 @@ func TestResolveByAlias(t *testing.T) {
 
 func TestResolveByExplicitPath(t *testing.T) {
 	dir := t.TempDir()
-	writeTemplate(t, dir, "2x1/code128", "^XA^XZ")
+	writeTemplate(t, dir, "2x1/001", "^XA^XZ")
 
-	path, err := Resolve(dir, "2x1/code128", nil)
+	path, err := Resolve(dir, "2x1/001", nil)
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
-	want := filepath.Join(dir, "2x1/code128.zpl")
+	want := filepath.Join(dir, "2x1/001.zpl")
 	if path != want {
 		t.Errorf("Resolve() = %q, want %q", path, want)
 	}
@@ -48,13 +48,13 @@ func TestResolveByExplicitPath(t *testing.T) {
 
 func TestResolveByExplicitPathWithDottedDir(t *testing.T) {
 	dir := t.TempDir()
-	writeTemplate(t, dir, "2.25x1.25/code128-qr", "^XA^XZ")
+	writeTemplate(t, dir, "2.25x1.25/001", "^XA^XZ")
 
-	path, err := Resolve(dir, "2.25x1.25/code128-qr", nil)
+	path, err := Resolve(dir, "2.25x1.25/001", nil)
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
-	want := filepath.Join(dir, "2.25x1.25/code128-qr.zpl")
+	want := filepath.Join(dir, "2.25x1.25/001.zpl")
 	if path != want {
 		t.Errorf("Resolve() = %q, want %q", path, want)
 	}
@@ -134,18 +134,18 @@ func TestRenderUnknownPlaceholderFails(t *testing.T) {
 
 func TestListSortedRelativePaths(t *testing.T) {
 	dir := t.TempDir()
-	writeTemplate(t, dir, "2x1/code128", "^XA^XZ")
-	writeTemplate(t, dir, "2x1/contact-code128", "^XA^XZ")
-	writeTemplate(t, dir, "2.25x1.25/code128-qr", "^XA^XZ")
+	writeTemplate(t, dir, "2x1/001", "^XA^XZ")
+	writeTemplate(t, dir, "2x1/003", "^XA^XZ")
+	writeTemplate(t, dir, "2.25x1.25/001", "^XA^XZ")
 
 	got, err := List(dir)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	want := []string{
-		"2.25x1.25/code128-qr",
-		"2x1/code128",
-		"2x1/contact-code128",
+		"2.25x1.25/001",
+		"2x1/001",
+		"2x1/003",
 	}
 	if len(got) != len(want) {
 		t.Fatalf("List() = %v, want %v", got, want)

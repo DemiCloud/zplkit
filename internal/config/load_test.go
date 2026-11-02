@@ -31,8 +31,8 @@ company_name = "Example Corp"
 asset_url = "https://example.com/assets/"
 
 [aliases]
-default = "2x1/code128"
-qr = "2.25x1.25/code128-qr"
+default = "2x1/001"
+qr = "2.25x1.25/001"
 `)
 
 	cfg, err := Load(path)
@@ -45,11 +45,11 @@ qr = "2.25x1.25/code128-qr"
 	if cfg.AssetURL != "https://example.com/assets/" {
 		t.Errorf("AssetURL = %q, want %q", cfg.AssetURL, "https://example.com/assets/")
 	}
-	if cfg.Aliases["default"] != "2x1/code128" {
-		t.Errorf("Aliases[default] = %q, want %q", cfg.Aliases["default"], "2x1/code128")
+	if cfg.Aliases["default"] != "2x1/001" {
+		t.Errorf("Aliases[default] = %q, want %q", cfg.Aliases["default"], "2x1/001")
 	}
-	if cfg.Aliases["qr"] != "2.25x1.25/code128-qr" {
-		t.Errorf("Aliases[qr] = %q, want %q", cfg.Aliases["qr"], "2.25x1.25/code128-qr")
+	if cfg.Aliases["qr"] != "2.25x1.25/001" {
+		t.Errorf("Aliases[qr] = %q, want %q", cfg.Aliases["qr"], "2.25x1.25/001")
 	}
 }
 
