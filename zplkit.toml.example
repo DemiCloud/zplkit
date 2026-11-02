@@ -36,13 +36,9 @@ endpoint = "printer.example.net:9100"
 # LPrint driver may expect something more specific.
 document_format = "application/octet-stream"
 
-# Resolve a short -t name to a path (without .zpl) under templates/.
-# A -t value containing "/" is always treated as an explicit path and
-# skips alias lookup entirely.
-[aliases]
-default        = "asset-tag/2x1/001"
-default-border = "asset-tag/2x1/002"
-field          = "asset-tag/2x1/003"
-field-border   = "asset-tag/2x1/004"
-qr             = "asset-tag/2.25x1.25/001"
-qr-border      = "asset-tag/2.25x1.25/002"
+# Resolve a short -t name to a path (without .zpl) under templates/. A -t
+# value containing "/" is always treated as an explicit path and skips
+# alias lookup entirely. No aliases ship by default — pick your own short
+# names for the templates/paths you actually use, e.g.:
+# [aliases]
+# default = "asset-tag/2x1/001"

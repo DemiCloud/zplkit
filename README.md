@@ -26,24 +26,25 @@ go build -o zplkit ./cmd/zplkit
 
 ```sh
 cp zplkit.toml.example zplkit.toml
-$EDITOR zplkit.toml   # set company_name, asset_url, aliases
+$EDITOR zplkit.toml   # set company_name, asset_url, and optionally your own [aliases]
 ```
 
 `zplkit.toml` is git-ignored — it's where your real company name, asset
 URL, default printer backend/endpoint, template aliases, and declared
 template categories live. `zplkit.toml.example` stays in the repo as the
-documented template for it.
+documented template for it. No aliases ship by default (including
+`default`, the `-t` flag's own default value) — add your own short names
+for whichever templates you actually use.
 
 ## Usage
 
 `zplkit` has four subcommands: `print`, `admin`, `version`, `help`.
 
 ```sh
-./zplkit print TAG                           # render the default template and print it
-./zplkit print -t qr TAG                      # render by alias
 ./zplkit print -t asset-tag/2x1/001 TAG       # render by explicit path
+./zplkit print -t default TAG                 # render by alias, if you've defined one
 ./zplkit print -t asset-tag/2x1/001 -f Tag=TAG  # TAG via --field instead of positionally
-./zplkit print -d TAG                         # dry run: write rendered ZPL to stdout
+./zplkit print -t asset-tag/2x1/001 -d TAG    # dry run: write rendered ZPL to stdout
 ./zplkit print -l                             # list templates, categories, and aliases
 ./zplkit admin -d setup/set-clock.zpl         # dry run: write a raw ZPL file to stdout
 ./zplkit admin setup/set-clock.zpl            # send a raw ZPL file straight to the printer
@@ -133,14 +134,21 @@ informational record of which category directories are in use, shown by
 
 ### `asset-tag`
 
-| Preview | Path | Fields | Default alias |
-| --- | --- | --- | --- |
-| ![asset-tag/2x1/001](templates/asset-tag/2x1/001.png) | `asset-tag/2x1/001` | company name, Code 128, human-readable tag | `default` |
-| ![asset-tag/2x1/002](templates/asset-tag/2x1/002.png) | `asset-tag/2x1/002` | border, company name, Code 128, human-readable tag | `default-border` |
-| ![asset-tag/2x1/003](templates/asset-tag/2x1/003.png) | `asset-tag/2x1/003` | company name, return contact, Code 128, tag | `field` |
-| ![asset-tag/2x1/004](templates/asset-tag/2x1/004.png) | `asset-tag/2x1/004` | border, company name, return contact, Code 128, tag | `field-border` |
-| ![asset-tag/2.25x1.25/001](templates/asset-tag/2.25x1.25/001.png) | `asset-tag/2.25x1.25/001` | company name, tag, Code 128, QR to asset URL | `qr` |
-| ![asset-tag/2.25x1.25/002](templates/asset-tag/2.25x1.25/002.png) | `asset-tag/2.25x1.25/002` | border, company name, tag, Code 128, QR to asset URL | `qr-border` |
+| Preview | Path | Fields |
+| --- | --- | --- |
+| ![asset-tag/2x1/001](templates/asset-tag/2x1/001.png) | `asset-tag/2x1/001` | company name, Code 128, human-readable tag |
+| ![asset-tag/2x1/002](templates/asset-tag/2x1/002.png) | `asset-tag/2x1/002` | square border, company name, Code 128, human-readable tag |
+| ![asset-tag/2x1/003](templates/asset-tag/2x1/003.png) | `asset-tag/2x1/003` | company name, return contact, Code 128, tag |
+| ![asset-tag/2x1/004](templates/asset-tag/2x1/004.png) | `asset-tag/2x1/004` | square border, company name, return contact, Code 128, tag |
+| ![asset-tag/2x1/005](templates/asset-tag/2x1/005.png) | `asset-tag/2x1/005` | rounded border, company name, Code 128, human-readable tag |
+| ![asset-tag/2x1/006](templates/asset-tag/2x1/006.png) | `asset-tag/2x1/006` | rounded border, company name, return contact, Code 128, tag |
+| ![asset-tag/2.25x1.25/001](templates/asset-tag/2.25x1.25/001.png) | `asset-tag/2.25x1.25/001` | company name, tag, Code 128, QR to asset URL |
+| ![asset-tag/2.25x1.25/002](templates/asset-tag/2.25x1.25/002.png) | `asset-tag/2.25x1.25/002` | square border, company name, tag, Code 128, QR to asset URL |
+| ![asset-tag/2.25x1.25/003](templates/asset-tag/2.25x1.25/003.png) | `asset-tag/2.25x1.25/003` | rounded border, company name, tag, Code 128, QR to asset URL |
+
+Each border/no-border pair places its fields identically — the border
+variants only add the `^GB` border graphic, never move content — so
+switching between no-border/square/rounded doesn't reflow a label.
 
 ### Template style
 
@@ -212,9 +220,10 @@ where its value came from.
    filename itself won't say. Introducing a brand-new category also means
    adding its own `###` subsection and table (see `### asset-tag` above),
    and adding its name to `categories` in `zplkit.toml.example`.
-5. Optionally add an `<alias> = "<category>/<size>/<number>"` line under
-   `[aliases]` in `zplkit.toml.example` so others get a short name for it
-   too.
+5. If you want a short name for it, add an `<alias> =
+   "<category>/<size>/<number>"` line under `[aliases]` in your own
+   `zplkit.toml` — aliases are a local, per-deployment convenience and
+   don't belong in `zplkit.toml.example`.
 
 ## Printer provisioning (`admin`)
 

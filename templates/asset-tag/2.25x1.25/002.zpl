@@ -1,13 +1,13 @@
 ^XA
-^FX asset-tag/2.25x1.25/002 - 2.25 x 1.25 in @ 203 dpi: border, company name, human-readable tag, Code 128, QR to asset URL
+^FX asset-tag/2.25x1.25/002 - 2.25 x 1.25 in @ 203 dpi: square border, company name, human-readable tag, Code 128, QR to asset URL
 ^CI28
 ^PW456
 ^LL254
 ^LH0,0
 
-^FX --- Border with rounded corners ---
+^FX --- Border ---
 ^FO12,12
-^GB432,230,4,B,3^FS
+^GB432,230,4^FS
 
 ^FX --- Branding ---
 ^FO38,40

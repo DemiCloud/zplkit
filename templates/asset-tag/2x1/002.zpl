@@ -1,12 +1,12 @@
 ^XA
-^FX asset-tag/2x1/002 - 2 x 1 in @ 203 dpi: border, company name, Code 128, human-readable tag
+^FX asset-tag/2x1/002 - 2 x 1 in @ 203 dpi: square border, company name, Code 128, human-readable tag
 ^CI28
 ^PW406
 ^LL203
 
-^FX --- Border with rounded corners ---
+^FX --- Border ---
 ^FO8,8
-^GB390,187,4,B,3^FS
+^GB390,187,4^FS
 
 ^FX --- Company name ---
 ^FO34,22
