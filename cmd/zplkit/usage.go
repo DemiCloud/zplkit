@@ -42,13 +42,20 @@ Flags:
   -h, --help                    Show this help
 `)
 	case "admin":
-		fmt.Print(`zplkit admin — send a raw ZPL file to the printer, no template rendering
+		fmt.Print(`zplkit admin — printer-side provisioning: a known setting, or a raw ZPL file
 
 Usage:
+  zplkit admin [flags] ACTION [ARG]
   zplkit admin [flags] FILE
 
+Actions:
+  clock                Set the printer's real-time clock to the current time
+  darkness LEVEL       Set print darkness, 0-30
+  calibrate            Run label length/gap sensor calibration
+  speed LEVEL          Set print speed, 1-14 inches/second
+
 Flags:
-  -d, --dry-run                 Write the file's contents to stdout instead of sending it
+  -d, --dry-run                 Write the ZPL/file contents to stdout instead of sending it
       --backend string          Delivery backend: "socket" or "ipp" (env ZPLKIT_BACKEND; config: printer.backend; default "socket")
       --endpoint string         Printer endpoint (env ZPLKIT_ENDPOINT; config: printer.endpoint)
       --document-format string  IPP document-format attribute, ipp backend only (env ZPLKIT_DOCUMENT_FORMAT; config: printer.document_format)

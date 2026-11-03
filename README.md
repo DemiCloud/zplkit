@@ -46,8 +46,9 @@ for whichever templates you actually use.
 ./zplkit print -t asset-tag/2x1/001 -f Tag=TAG  # TAG via --field instead of positionally
 ./zplkit print -t asset-tag/2x1/001 -d TAG    # dry run: write rendered ZPL to stdout
 ./zplkit print -l                             # list templates, categories, and aliases
-./zplkit admin -d setup/set-clock.zpl         # dry run: write a raw ZPL file to stdout
-./zplkit admin setup/set-clock.zpl            # send a raw ZPL file straight to the printer
+./zplkit admin clock                          # set the printer's real-time clock to now
+./zplkit admin -d darkness 15                 # dry run: write a built-in action's ZPL to stdout
+./zplkit admin setup/store-logo.zpl           # anything else: send a raw ZPL file straight through
 ./zplkit version                              # print the version (also --version, -V)
 ./zplkit help [print|admin|version]           # usage (also --help, -h)
 ```
@@ -74,14 +75,15 @@ for whichever templates you actually use.
 
 ### `admin` flags
 
-`admin` sends a `.zpl` file straight to the printer — no template
-resolution, no `TAG`, no `{{.Field}}` rendering. Use it for printer-side
-provisioning that isn't tied to a specific asset tag: storing a logo
-(`~DG`), setting the real-time clock (`^SC`), calibration, and similar
-one-off setup. It takes the same `-d`/`--backend`/`--endpoint`/
-`--document-format`/`--config`/`--timeout` flags as `print` (no
-`--template`/`--list`/`--templates`, since there's no template involved),
-plus a required `FILE` argument.
+`admin` is for printer-side provisioning that isn't tied to a specific
+asset tag. Its one positional argument is either a built-in action name
+— `clock`, `darkness LEVEL`, `calibrate`, `speed LEVEL` (see [Printer
+provisioning](#printer-provisioning-admin)) — or, for anything else
+(e.g. storing a logo via `~DG`), a `.zpl` file path, sent as-is: no
+template resolution, no `TAG`, no `{{.Field}}` rendering. It takes the
+same `-d`/`--backend`/`--endpoint`/`--document-format`/`--config`/
+`--timeout` flags as `print` (no `--template`/`--list`/`--templates`,
+since there's no template involved).
 
 The printer settings (`backend`/`endpoint`/`document-format`, shared by
 `print` and `admin`) each have four possible sources; precedence is CLI
@@ -293,14 +295,31 @@ as-is, which most ZPL parsers don't handle well.
 
 ## Printer provisioning (`admin`)
 
-Some printer setup isn't tied to any one asset tag — storing a logo in
-flash, setting the clock, calibration. Write it as a plain `.zpl` file
-(no `{{.Field}}` placeholders — `admin` sends the file as-is) and send it
-with `zplkit admin`:
+Some printer setup isn't tied to any one asset tag — setting the clock,
+print darkness, calibration, print speed. `admin` has a built-in action
+for each of these:
 
 ```sh
-./zplkit admin -d setup/set-clock.zpl     # dry run: see what would be sent
-./zplkit admin setup/set-clock.zpl        # send it
+./zplkit admin clock              # set the printer's real-time clock to now
+./zplkit admin darkness 15        # set print darkness (0-30)
+./zplkit admin calibrate          # run label length/gap sensor calibration
+./zplkit admin speed 4            # set print speed, inches/second (1-14)
+./zplkit admin -d darkness 15     # dry run any action: write the ZPL to stdout instead of sending it
+```
+
+`darkness` and `speed` are saved with `^JUS` so they survive a power
+cycle; `clock` and `calibrate` write directly to the printer and don't
+need that.
+
+For anything else not tied to an asset tag — storing a logo in flash
+(`~DG`), or any other provisioning not covered by a built-in action —
+write it as a plain `.zpl` file (no `{{.Field}}` placeholders — `admin`
+sends the file as-is whenever its first argument isn't a known action
+name) and send it the same way:
+
+```sh
+./zplkit admin -d setup/store-logo.zpl    # dry run: see what would be sent
+./zplkit admin setup/store-logo.zpl       # send it
 ```
 
 There's no required location for these files; put them wherever makes

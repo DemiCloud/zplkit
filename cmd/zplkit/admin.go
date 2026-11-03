@@ -11,12 +11,13 @@ import (
 	"github.com/demicloud/zplkit/internal/printer"
 )
 
-// adminCmd sends a raw ZPL file straight to the printer — no template
-// resolution, no TAG, no placeholder rendering. It's for printer-side
-// provisioning/configuration that isn't tied to a specific asset tag:
-// storing a logo (~DG), setting the real-time clock (^SC), calibration,
-// and similar one-off setup. Write and dry-run-check these files exactly
-// like a template, just without any {{.Field}} placeholders.
+// adminCmd sends printer-side provisioning/configuration that isn't tied
+// to a specific asset tag. Its one positional argument is either a known
+// action name (see adminActions in admin_actions.go — clock, darkness,
+// calibrate, speed), whose ZPL/SGD is built here, or — for anything not
+// in that map, e.g. storing a logo (~DG) — a raw .zpl file path, read
+// and sent exactly as-is: no template resolution, no TAG, no
+// placeholder rendering.
 func adminCmd(args []string) {
 	fs := flag.NewFlagSet("admin", flag.ContinueOnError)
 	fs.Usage = func() { usageFor("admin") }
@@ -29,7 +30,7 @@ func adminCmd(args []string) {
 		configPath         string
 		timeoutSec         int
 	)
-	fs.BoolVarP(&dryRun, "dry-run", "d", false, "write the file's contents to stdout instead of sending it")
+	fs.BoolVarP(&dryRun, "dry-run", "d", false, "write the ZPL/file contents to stdout instead of sending it")
 	fs.StringVar(&backendFlag, "backend", "", `delivery backend: "socket" or "ipp" (env ZPLKIT_BACKEND; config: printer.backend; default "socket")`)
 	fs.StringVar(&endpointFlag, "endpoint", "", `printer endpoint: "host:port" for socket, a printer resource URL for ipp (env ZPLKIT_ENDPOINT; config: printer.endpoint)`)
 	fs.StringVar(&documentFormatFlag, "document-format", "", `IPP document-format attribute, ipp backend only (env ZPLKIT_DOCUMENT_FORMAT; config: printer.document_format)`)
@@ -42,20 +43,36 @@ func adminCmd(args []string) {
 		os.Exit(1)
 	}
 
-	if fs.NArg() != 1 {
-		fmt.Fprintf(os.Stderr, "admin: a .zpl file path is required\n\n")
+	if fs.NArg() < 1 {
+		fmt.Fprintf(os.Stderr, "admin: an action or a .zpl file path is required\n\n")
 		usageFor("admin")
 		os.Exit(1)
 	}
 
-	raw, err := os.ReadFile(fs.Arg(0))
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "zplkit:", err)
-		os.Exit(1)
+	var raw string
+	if build, ok := adminActions[fs.Arg(0)]; ok {
+		zpl, err := build(fs.Args()[1:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "zplkit:", err)
+			os.Exit(1)
+		}
+		raw = zpl
+	} else {
+		if fs.NArg() != 1 {
+			fmt.Fprintf(os.Stderr, "admin: unknown action %q, and a file path takes no extra arguments\n\n", fs.Arg(0))
+			usageFor("admin")
+			os.Exit(1)
+		}
+		b, err := os.ReadFile(fs.Arg(0))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "zplkit:", err)
+			os.Exit(1)
+		}
+		raw = string(b)
 	}
 
 	if dryRun {
-		fmt.Println(string(raw))
+		fmt.Println(raw)
 		return
 	}
 
@@ -68,7 +85,7 @@ func adminCmd(args []string) {
 	backend := resolveBackend(backendFlag, cfg)
 	endpoint := resolveEndpoint(endpointFlag, cfg)
 	documentFormat := resolveDocumentFormat(documentFormatFlag, cfg)
-	if err := printer.Send(backend, endpoint, documentFormat, string(raw), time.Duration(timeoutSec)*time.Second); err != nil {
+	if err := printer.Send(backend, endpoint, documentFormat, raw, time.Duration(timeoutSec)*time.Second); err != nil {
 		fmt.Fprintln(os.Stderr, "zplkit:", err)
 		os.Exit(1)
 	}
