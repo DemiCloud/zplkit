@@ -10,8 +10,10 @@ should raise concerns and advocate for the more appropriate approach.
 ## Project Overview
 
 `zplkit` renders a ZPL label template and sends it to a network label printer (raw TCP
-or IPP — see `internal/printer`), and separately can send a raw `.zpl` file straight
-through for printer-side provisioning (`admin`). Templates aren't asset-tag-specific —
+or IPP — see `internal/printer`), and separately handles printer-side provisioning
+(`admin`): either a known action (clock/darkness/calibrate/speed, built in Go) or,
+for anything else, a raw `.zpl` file sent straight through. Templates aren't
+asset-tag-specific —
 `templates/<category>/<size>/<NNN>.zpl` groups them by what they're for (`asset-tag`,
 `mail-to`, `mail-from`, `name` today; nothing stops adding more) and by physical label
 size within that.
@@ -40,11 +42,16 @@ cmd/
   zplkit/
     main.go            ← dispatch on os.Args[1] only; var version; tagRE
     print.go            ← printCmd: render a template and send/dry-run/list it
-    admin.go             ← adminCmd: read a raw .zpl file and send/dry-run it, no rendering
-    resolve.go            ← envOr/envOrInt + resolveBackend/resolveEndpoint/resolveDocumentFormat,
-                             shared by printCmd and adminCmd
-    usage.go               ← usage() (top-level) and usageFor(sub) (per-subcommand help text)
-    main_test.go             ← tests for the resolve* precedence functions
+    admin.go             ← adminCmd: dispatch a known action (adminActions) or read a raw
+                             .zpl file, then send/dry-run it — no template rendering either way
+    admin_actions.go      ← adminActions map + buildClockZPL/buildDarknessZPL/
+                             buildCalibrateZPL/buildSpeedZPL: build ZPL/SGD for a known
+                             admin action from validated numeric args, no file needed
+    resolve.go              ← envOr/envOrInt + resolveBackend/resolveEndpoint/resolveDocumentFormat,
+                               shared by printCmd and adminCmd
+    usage.go                 ← usage() (top-level) and usageFor(sub) (per-subcommand help text)
+    main_test.go               ← tests for the resolve* precedence functions
+    admin_actions_test.go       ← tests for each adminActions builder, including arg validation
 internal/
   config/
     config.go          ← Config struct (company_name/asset_url/printer/aliases/categories), toml tags
@@ -248,12 +255,17 @@ either source. Apply extra scrutiny to any change that:
   that doesn't route through `label.Data`.
 - Loosens or removes `label.Render`'s `.Option("missingkey=error")` or
   `validateFieldValues` call.
-- `admin.go` is the one deliberate exception to all of this: it reads an arbitrary local
-  file and sends its bytes to the printer completely unvalidated — no `tagRE`, no
-  `label.Resolve`'s path-traversal check, no field validation. That's intentional (it's
-  an explicit operator action on a file they chose, not something driven by a scanned
-  tag or other external input), not an oversight — don't add `print`-style validation
-  to it, and don't let `print.go` grow an "send raw file" mode that skips validation the
-  way `admin.go` does.
+- `admin.go`'s raw-file fallback (anything not matching a name in `adminActions`) is the
+  one deliberate exception to all of this: it reads an arbitrary local file and sends
+  its bytes to the printer completely unvalidated — no `tagRE`, no `label.Resolve`'s
+  path-traversal check, no field validation. That's intentional (it's an explicit
+  operator action on a file they chose, not something driven by a scanned tag or other
+  external input), not an oversight — don't add `print`-style validation to it, and
+  don't let `print.go` grow a "send raw file" mode that skips validation the way
+  `admin.go` does. `admin_actions.go`'s builders are different: they never touch a file
+  or `label.Data`, and only ever accept a bounded integer (via `strconv.Atoi` + a range
+  check) or no argument at all, so there's no string-interpolation path for `^`/`~` to
+  reach them — adding a new action that accepts free-text input would need its own
+  `^`/`~` check, since none of this file's validation covers it.
 - Changes `label.Resolve`'s name/path validation — this is what stands between a
   `-t` argument and reading an arbitrary file via `TEMPLATE_DIR/../../...`.

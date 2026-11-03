@@ -13,7 +13,7 @@ Usage:
 
 Subcommands:
   print    Render a template and send it to the printer
-  admin    Send a raw ZPL file to the printer (provisioning/configuration)
+  admin    Printer-side provisioning: a known setting, or a raw ZPL file
   version  Show version information
   help     Show help for a subcommand
 `)
