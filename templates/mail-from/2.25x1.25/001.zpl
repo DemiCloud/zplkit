@@ -5,22 +5,22 @@
 ^LL254
 ^LH0,0
 
-^FX --- Company name (fitfont keeps it off the label edge) ---
+^FX --- Company name ---
 ^FO38,69
 {{$sz := fitfont .CompanyName 402 26 16}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.CompanyName}}^FS
 
-^FX --- Sender name (fitfont keeps it off the label edge) ---
+^FX --- Sender name ---
 ^FO38,99
 {{$sz := fitfont .Name 402 30 18}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.Name}}^FS
 
-^FX --- Street address (fitfont keeps it off the label edge) ---
+^FX --- Street address ---
 ^FO38,133
 {{$sz := fitfont .Address1 402 24 14}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.Address1}}^FS
 
-^FX --- City, state, ZIP (fitfont keeps it off the label edge) ---
+^FX --- City, state, ZIP ---
 ^FO38,161
 {{$sz := fitfont (printf "%s, %s %s" .City .State .ZIP) 402 24 14}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.City}}, {{.State}} {{.ZIP}}^FS

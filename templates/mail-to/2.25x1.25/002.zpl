@@ -9,17 +9,17 @@
 ^FO12,12
 ^GB432,230,4^FS
 
-^FX --- Recipient name (fitfont keeps it off the border) ---
+^FX --- Recipient name ---
 ^FO38,72
 {{$sz := fitfont .Name 402 32 20}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.Name}}^FS
 
-^FX --- Street address (fitfont keeps it off the border) ---
+^FX --- Street address ---
 ^FO38,112
 {{$sz := fitfont .Address1 402 26 16}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.Address1}}^FS
 
-^FX --- City, state, ZIP (fitfont keeps it off the border) ---
+^FX --- City, state, ZIP ---
 ^FO38,146
 {{$sz := fitfont (printf "%s, %s %s" .City .State .ZIP) 402 26 16}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.City}}, {{.State}} {{.ZIP}}^FS

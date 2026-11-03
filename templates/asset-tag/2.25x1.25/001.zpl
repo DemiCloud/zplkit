@@ -5,7 +5,7 @@
 ^LL254
 ^LH0,0
 
-^FX --- Branding (fitfont keeps it clear of the QR code) ---
+^FX --- Branding ---
 ^FO38,40
 {{$sz := fitfont (printf "%s Asset" .CompanyName) 258 30 18}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.CompanyName}} Asset^FS
@@ -21,8 +21,7 @@
 ^BCN,72,N,N,N,A
 ^FD{{.Tag}}^FS
 
-^FX --- QR direct asset URL --- (^BY2,2,0 resets the barcode's height,
-^FX which ^BQ otherwise inherits as an unwanted Y-offset) ---
+^FX --- QR direct asset URL (see ../README.md: ^BY reset) ---
 ^BY2,2,0
 ^FO306,76
 ^BQN,2,3

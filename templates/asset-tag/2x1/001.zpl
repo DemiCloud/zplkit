@@ -4,7 +4,7 @@
 ^PW406
 ^LL203
 
-^FX --- Company name (fitfont keeps it off the label edge) ---
+^FX --- Company name ---
 ^FO34,22
 {{$sz := fitfont .CompanyName 360 26 16}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.CompanyName}}^FS

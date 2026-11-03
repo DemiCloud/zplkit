@@ -131,6 +131,10 @@ informational record of which category directories are in use, shown by
 `print -l` — it's never enforced, so a category that exists under
 `templates/` but isn't listed there yet still works.
 
+Each category directory has its own `README.md` with field details and
+any ZPL quirks specific to it; the tables below are just a map of
+what's there.
+
 ### `asset-tag`
 
 | Preview | Path | Fields |
@@ -145,9 +149,8 @@ informational record of which category directories are in use, shown by
 | ![asset-tag/2.25x1.25/002](templates/asset-tag/2.25x1.25/002.png) | `asset-tag/2.25x1.25/002` | square border, company name, tag, Code 128, QR to asset URL |
 | ![asset-tag/2.25x1.25/003](templates/asset-tag/2.25x1.25/003.png) | `asset-tag/2.25x1.25/003` | rounded border, company name, tag, Code 128, QR to asset URL |
 
-Each border/no-border pair places its fields identically — the border
-variants only add the `^GB` border graphic, never move content — so
-switching between no-border/square/rounded doesn't reflow a label.
+See `templates/asset-tag/README.md` for field details and a couple of
+ZPL gotchas (the QR/barcode interaction, `fitfont` sizing).
 
 ### `mail-to`
 
@@ -157,8 +160,7 @@ switching between no-border/square/rounded doesn't reflow a label.
 | ![mail-to/2.25x1.25/002](templates/mail-to/2.25x1.25/002.png) | `mail-to/2.25x1.25/002` | square border, name, street address, city/state/ZIP |
 | ![mail-to/2.25x1.25/003](templates/mail-to/2.25x1.25/003.png) | `mail-to/2.25x1.25/003` | rounded border, name, street address, city/state/ZIP |
 
-Fields: `Name`, `Address1`, `City`, `State`, `ZIP` (all via `-f`, none
-automatic — this is the recipient, not you).
+See `templates/mail-to/README.md` for field details.
 
 ### `mail-from`
 
@@ -168,9 +170,7 @@ automatic — this is the recipient, not you).
 | ![mail-from/2.25x1.25/002](templates/mail-from/2.25x1.25/002.png) | `mail-from/2.25x1.25/002` | square border, company name, name, street address, city/state/ZIP |
 | ![mail-from/2.25x1.25/003](templates/mail-from/2.25x1.25/003.png) | `mail-from/2.25x1.25/003` | rounded border, company name, name, street address, city/state/ZIP |
 
-Same `Name`/`Address1`/`City`/`State`/`ZIP` fields as `mail-to`, plus
-the automatic `{{.CompanyName}}` from `zplkit.toml` — this is your own
-return address.
+See `templates/mail-from/README.md` for field details.
 
 ### `name`
 
@@ -180,24 +180,15 @@ return address.
 | ![name/2.25x1.25/002](templates/name/2.25x1.25/002.png) | `name/2.25x1.25/002` | square border, name, centered |
 | ![name/2.25x1.25/003](templates/name/2.25x1.25/003.png) | `name/2.25x1.25/003` | rounded border, name, centered |
 
-A single centered `Name` field — a box or jar label, nothing else. Its
-font size isn't fixed: the template calls `fitfont` (see
-[Placeholders](#placeholders) below) to shrink it as needed, down to a
-20pt floor; past that floor it renders at 20pt and runs past the
-label's edge rather than wrapping into overlapping text.
-
-`Name` also supports one explicit line break: a real newline in the
-field's value (e.g. `-f Name=$'Cables:\nUSB-C'` — bash's `$'...'`
-quoting, not plain `"..."`, which leaves `\n` as two literal
-characters) renders as two centered lines, sized together so the
-longer line still fits. A `Name` with no newline renders exactly as
-before.
+See `templates/name/README.md` for field details, including how to
+get a second line out of `Name`.
 
 ### Template style
 
 - One `^FX` comment line above each field block (`^FO`/`^A0`/`^BC`/`^BQ`/
-  etc. through its closing `^FD...^FS`), describing what the field is —
-  not just what command it is.
+  etc. through its closing `^FD...^FS`), naming what the field is — not
+  what command it is, and not why/how (that belongs in the category's
+  `README.md`, not the `.zpl` file).
 - Blank line between field blocks, and between the header directives
   (`^CI28`/`^PW`/`^LL`/`^LH`) and the first field.
 - Each ZPL command on its own line within a block (`^FO`, `^BY`, `^BC`,
@@ -208,16 +199,8 @@ before.
   need to be spelled out — the filename itself stays just a number.
 
 See `templates/asset-tag/2.25x1.25/001.zpl` for a template that follows
-this fully.
-
-**`^BY`'s height leaks into the next `^BQ`.** If a field block sets
-`^BY<w>,<r>,<h>` for a barcode (even though `^BC` takes its own
-explicit height), that `h` stays as printer state and gets added as a
-Y-offset to whatever `^BQ` (QR code) comes after it — confirmed on
-both Labelary and a real printer, so it's firmware behavior, not a
-preview artifact. If a QR field follows a barcode field anywhere in a
-template, reset it first: `^BY2,2,0` right before the QR's `^FO`/`^BQ`.
-See `templates/asset-tag/2.25x1.25/003.zpl`.
+this fully, and that category's `README.md` for the `^BY`/`^BQ` gotcha
+a template combining a barcode and a QR code needs to know about.
 
 ### Placeholders
 
