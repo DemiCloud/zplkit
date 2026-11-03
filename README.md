@@ -176,9 +176,9 @@ return address.
 
 | Preview | Path | Fields |
 | --- | --- | --- |
-| ![name/2x1/001](templates/name/2x1/001.png) | `name/2x1/001` | name, centered |
-| ![name/2x1/002](templates/name/2x1/002.png) | `name/2x1/002` | square border, name, centered |
-| ![name/2x1/003](templates/name/2x1/003.png) | `name/2x1/003` | rounded border, name, centered |
+| ![name/2.25x1.25/001](templates/name/2.25x1.25/001.png) | `name/2.25x1.25/001` | name, centered |
+| ![name/2.25x1.25/002](templates/name/2.25x1.25/002.png) | `name/2.25x1.25/002` | square border, name, centered |
+| ![name/2.25x1.25/003](templates/name/2.25x1.25/003.png) | `name/2.25x1.25/003` | rounded border, name, centered |
 
 A single centered `Name` field — a box or jar label, nothing else. Its
 font size isn't fixed: the template calls a `fitfont` function (a
@@ -244,7 +244,7 @@ one line within `<maxWidthDots>`, shrinking from `<maxFont>` down to
 `<minFont>` as needed — text too long even at `<minFont>` still gets
 `<minFont>`, on one line, rather than wrapping. It's an estimate (`^A0`
 is proportionally spaced, not monospace) biased to avoid overflow
-rather than to be exact. See `templates/name/2x1/001.zpl`.
+rather than to be exact. See `templates/name/2.25x1.25/001.zpl`.
 
 ### Adding a template
 
