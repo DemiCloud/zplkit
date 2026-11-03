@@ -192,15 +192,25 @@ Use conventional-commits style:
   template. This is now the one enforced choke point for "does this value end up
   verbatim in ZPL," regardless of whether it came from config or a CLI `-f` flag — see
   Security below.
-- `label.Render`'s template gets one custom func beyond Go's defaults: `fitfont` (backed
-  by `fitFont` in `label.go`), which returns an `^A0` font size that keeps a string on
-  one line within a given width, shrinking between a max/min — used by
-  `templates/name/2.25x1.25/*.zpl` so a long `Name` shrinks instead of wrapping into
-  overlapping text. It's a reusable template func, not `name`-category-specific logic,
-  so any future template needing the same "fit free text into a box" behavior should
-  reuse it rather than duplicating the math. `a0CharWidthRatio` is an empirical
-  estimate (Labelary-measured, biased high so the width estimate never undershoots) —
-  recalibrate it, not the call sites, if it turns out wrong for a particular font/size.
+- `label.Render`'s template gets three custom funcs beyond Go's defaults, all in
+  `label.go` and all reusable — not `name`-category-specific logic, so any future
+  template needing the same behavior should call these rather than duplicating the
+  math:
+  - `fitfont` (backed by `fitFont`) returns an `^A0` font size that keeps text within a
+    given width, shrinking between a max/min. `a0CharWidthRatio` is an empirical
+    estimate (Labelary-measured, biased high so the width estimate never undershoots) —
+    recalibrate it, not the call sites, if it turns out wrong for a particular
+    font/size. If the text has a line break, `fitFont` sizes to its longest line.
+  - `zplbreak` (backed by `zplLineBreak`) converts a literal `\n` in a field's value
+    into ZPL's `\&` explicit-break sequence, for use inside an `^FB` field. A raw
+    newline byte substituted straight into `^FD...^FS` isn't reliably handled by ZPL
+    parsers — observed breaking Labelary's entirely — so any template whose field might
+    contain a real newline must route it through `zplbreak`, never `{{.Field}}`
+    directly, before putting it in `^FD`.
+  - `linecount` (backed by `lineCount`) returns how many lines a string has, for
+    templates that need to pick different field-origin coordinates depending on whether
+    a field rendered 1 or 2 lines (see the `{{if gt $n 1}}` in
+    `templates/name/2.25x1.25/*.zpl`).
 
 ### Testing
 

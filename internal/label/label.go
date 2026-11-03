@@ -31,15 +31,24 @@ const zplBreakers = "^~"
 const a0CharWidthRatio = 0.55
 
 // fitFont returns an ^A0 font size (equal width and height, in dots) that
-// keeps text on one line within maxWidth dots, shrinking from max down to
-// min as needed. If text wouldn't fit even at min, fitFont still returns
-// min — the caller renders a single line that overflows the available
-// width rather than wrapping (which would risk overlapping itself).
+// keeps text within maxWidth dots, shrinking from max down to min as
+// needed. If text wouldn't fit even at min, fitFont still returns min —
+// the caller renders text that overflows the available width rather than
+// wrapping (which would risk overlapping itself). If text contains an
+// explicit line break (see zplLineBreak), the estimate is based on its
+// longest line, since each line is sized the same and rendered separately
+// by ^FB — a short first line doesn't let a long second line run wider.
 func fitFont(text string, maxWidth, max, min int) int {
-	if text == "" {
+	longest := 0
+	for _, line := range strings.Split(text, "\n") {
+		if len(line) > longest {
+			longest = len(line)
+		}
+	}
+	if longest == 0 {
 		return max
 	}
-	fit := int(float64(maxWidth) / (float64(len(text)) * a0CharWidthRatio))
+	fit := int(float64(maxWidth) / (float64(longest) * a0CharWidthRatio))
 	if fit > max {
 		return max
 	}
@@ -47,6 +56,25 @@ func fitFont(text string, maxWidth, max, min int) int {
 		return min
 	}
 	return fit
+}
+
+// zplLineBreak converts a literal newline in text (e.g. from
+// -f Name=$'Cables:\nUSB-C') into ZPL's own explicit-break sequence,
+// \&, recognized inside an ^FB (Field Block) command. A raw newline byte
+// has no defined meaning inside ^FD...^FS and isn't reliably handled by
+// ZPL parsers (observed: it breaks Labelary's), so this conversion is
+// required — don't substitute {{.Field}} directly into a multi-line-
+// capable ^FB field; route it through {{zplbreak .Field}} instead.
+func zplLineBreak(text string) string {
+	return strings.ReplaceAll(text, "\n", `\&`)
+}
+
+// lineCount returns how many lines text has, counting a zero-length text
+// as one empty line (consistent with strings.Split's own behavior) —
+// used by templates to pick field-origin coordinates that center an
+// explicit-break field's 1 or 2 rendered lines correctly.
+func lineCount(text string) int {
+	return strings.Count(text, "\n") + 1
 }
 
 // Data is the set of values a template can reference as {{.Key}}. It's
@@ -99,7 +127,11 @@ func Render(path string, data Data) (string, error) {
 
 	tmpl, err := template.New(filepath.Base(path)).
 		Option("missingkey=error").
-		Funcs(template.FuncMap{"fitfont": fitFont}).
+		Funcs(template.FuncMap{
+			"fitfont":   fitFont,
+			"zplbreak":  zplLineBreak,
+			"linecount": lineCount,
+		}).
 		Parse(string(b))
 	if err != nil {
 		return "", fmt.Errorf("parsing template %s: %w", path, err)

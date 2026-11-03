@@ -181,12 +181,17 @@ return address.
 | ![name/2.25x1.25/003](templates/name/2.25x1.25/003.png) | `name/2.25x1.25/003` | rounded border, name, centered |
 
 A single centered `Name` field — a box or jar label, nothing else. Its
-font size isn't fixed: the template calls a `fitfont` function (a
-built-in template function, see [Placeholders](#placeholders) below)
-that shrinks it to keep `Name` on one line within the label, down to a
-20pt floor. A `Name` long enough to need smaller than that still
-renders at the floor size, on one line, running past the label's edge
-rather than wrapping into overlapping text.
+font size isn't fixed: the template calls `fitfont` (see
+[Placeholders](#placeholders) below) to shrink it as needed, down to a
+20pt floor; past that floor it renders at 20pt and runs past the
+label's edge rather than wrapping into overlapping text.
+
+`Name` also supports one explicit line break: a real newline in the
+field's value (e.g. `-f Name=$'Cables:\nUSB-C'` — bash's `$'...'`
+quoting, not plain `"..."`, which leaves `\n` as two literal
+characters) renders as two centered lines, sized together so the
+longer line still fits. A `Name` with no newline renders exactly as
+before.
 
 ### Template style
 
@@ -237,14 +242,36 @@ via `-f`) is a hard error at render time, not a silently blank or literal
 contains `^` or `~` (ZPL command prefixes), regardless of which field or
 where its value came from.
 
-Templates also have one built-in template function beyond Go's own
-(`len`, `printf`, etc.): `{{fitfont <text> <maxWidthDots> <maxFont>
-<minFont>}}` returns an `^A0` font size (dots) that keeps `<text>` on
-one line within `<maxWidthDots>`, shrinking from `<maxFont>` down to
-`<minFont>` as needed — text too long even at `<minFont>` still gets
-`<minFont>`, on one line, rather than wrapping. It's an estimate (`^A0`
-is proportionally spaced, not monospace) biased to avoid overflow
-rather than to be exact. See `templates/name/2.25x1.25/001.zpl`.
+Templates also have three built-in template functions beyond Go's own
+(`len`, `printf`, etc.):
+
+- `{{fitfont <text> <maxWidthDots> <maxFont> <minFont>}}` returns an
+  `^A0` font size (dots) that keeps `<text>` within `<maxWidthDots>`,
+  shrinking from `<maxFont>` down to `<minFont>` as needed — text too
+  long even at `<minFont>` still gets `<minFont>` rather than wrapping.
+  It's an estimate (`^A0` is proportionally spaced, not monospace)
+  biased to avoid overflow rather than to be exact. If `<text>`
+  contains a line break (see `zplbreak` below), the estimate is based
+  on its longest line, so a short first line doesn't let a long second
+  one run wide.
+- `{{zplbreak <text>}}` converts a literal newline in `<text>` into
+  ZPL's own explicit line-break sequence, `\&`, recognized inside an
+  `^FB` (Field Block) command — a raw newline byte has no defined
+  meaning inside `^FD...^FS` and broke Labelary's parser when tried
+  directly, so route any field that might contain one through this
+  before putting it in `^FD`, not `{{.Field}}` directly.
+- `{{linecount <text>}}` returns how many lines `<text>` has (1 if no
+  newline), for picking field-origin coordinates that center a
+  1-or-2-line block correctly — see the `{{if gt $n 1}}...{{end}}` in
+  `templates/name/2.25x1.25/001.zpl`.
+
+A field value containing a real newline (e.g.
+`-f Name=$'Cables:\nUSB-C'` — bash's `$'...'` quoting, not `"..."`,
+which leaves `\n` as two literal characters) only renders as a line
+break on a template that explicitly uses `zplbreak`/`linecount` and an
+`^FB` with more than one line, like `name`'s. A template that
+substitutes `{{.Field}}` directly still renders a literal newline byte
+as-is, which most ZPL parsers don't handle well.
 
 ### Adding a template
 

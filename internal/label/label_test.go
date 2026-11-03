@@ -175,6 +175,8 @@ func TestFitFont(t *testing.T) {
 		{name: "short text uses max", text: "Jam", maxWidth: 390, max: 48, min: 20, wantClampedToMax: true},
 		{name: "long text shrinks below max", text: "Smoked Spanish Paprika", maxWidth: 390, max: 48, min: 20},
 		{name: "extreme text clamps to min", text: "Extremely Long Spice Jar Label Name Example", maxWidth: 390, max: 48, min: 20, wantClampedToMin: true},
+		{name: "multiline uses longest line, not combined length", text: "Cables:\nUSB-C", maxWidth: 390, max: 48, min: 20, wantClampedToMax: true},
+		{name: "multiline shrinks for a long second line", text: "A\nSmoked Spanish Paprika", maxWidth: 390, max: 48, min: 20},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -192,6 +194,58 @@ func TestFitFont(t *testing.T) {
 				t.Errorf("fitFont() = %d, want clamped to min %d", got, tt.min)
 			}
 		})
+	}
+}
+
+func TestZplLineBreak(t *testing.T) {
+	tests := []struct {
+		name, text, want string
+	}{
+		{"no newline unchanged", "USB-C", "USB-C"},
+		{"single newline becomes ZPL break", "Cables:\nUSB-C", `Cables:\&USB-C`},
+		{"multiple newlines each convert", "A\nB\nC", `A\&B\&C`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := zplLineBreak(tt.text); got != tt.want {
+				t.Errorf("zplLineBreak(%q) = %q, want %q", tt.text, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLineCount(t *testing.T) {
+	tests := []struct {
+		name string
+		text string
+		want int
+	}{
+		{"empty text is one line", "", 1},
+		{"no newline is one line", "USB-C", 1},
+		{"one newline is two lines", "Cables:\nUSB-C", 2},
+		{"two newlines is three lines", "A\nB\nC", 3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := lineCount(tt.text); got != tt.want {
+				t.Errorf("lineCount(%q) = %d, want %d", tt.text, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRenderMultiLineTemplateFuncs(t *testing.T) {
+	dir := t.TempDir()
+	writeTemplate(t, dir, "fit",
+		`{{$n := linecount .Name}}^FO0,{{if gt $n 1}}79{{else}}103{{end}}^FD{{zplbreak .Name}}^FS`)
+
+	got, err := Render(filepath.Join(dir, "fit.zpl"), Data{"Name": "Cables:\nUSB-C"})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	want := `^FO0,79^FDCables:\&USB-C^FS`
+	if got != want {
+		t.Errorf("Render() = %q, want %q", got, want)
 	}
 }
 
