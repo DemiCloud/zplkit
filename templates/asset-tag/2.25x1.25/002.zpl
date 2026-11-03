@@ -9,9 +9,9 @@
 ^FO12,12
 ^GB432,230,4^FS
 
-^FX --- Branding ---
+^FX --- Branding (fitfont keeps it clear of the QR code) ---
 ^FO38,40
-^A0N,30,30
+{{$sz := fitfont (printf "%s Asset" .CompanyName) 258 30 18}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.CompanyName}} Asset^FS
 
 ^FX --- Human-readable asset tag ---

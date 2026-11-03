@@ -4,9 +4,9 @@
 ^PW406
 ^LL203
 
-^FX --- Company name ---
+^FX --- Company name (fitfont keeps it off the label edge) ---
 ^FO34,18
-^A0N,24,24
+{{$sz := fitfont .CompanyName 360 24 14}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.CompanyName}}^FS
 
 ^FX --- Return contact ---

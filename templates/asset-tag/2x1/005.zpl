@@ -8,9 +8,9 @@
 ^FO8,8
 ^GB390,187,4,B,3^FS
 
-^FX --- Company name ---
+^FX --- Company name (fitfont keeps it off the border) ---
 ^FO34,22
-^A0N,26,26
+{{$sz := fitfont .CompanyName 360 26 16}}^A0N,{{$sz}},{{$sz}}
 ^FD{{.CompanyName}}^FS
 
 ^FX --- Code 128 asset tag ---
